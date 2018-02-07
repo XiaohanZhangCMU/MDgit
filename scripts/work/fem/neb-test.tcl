@@ -127,10 +127,10 @@ set Ly0 [ MD++_Get H_22 ]
 set Lz0 [ MD++_Get H_33 ]
 puts "n_bdy_nodes = $n_bdy_nodes"
 
-MD++ cuda_memcpy_all
 
 if { $status == 0 } {
   MD++ RtoRref
+  MD++ cuda_memcpy_all
 #  setup_window
 #  openwindow
 
