@@ -28,7 +28,6 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     int _NINT_PER_ELEMENT;  /* number of Gauss integration points per element */
     int _NFACE_PER_ELEMENT;
     int _NDIM;              /* dimension of elements */
-    int _ReadColorID;
     int _EquationType;
     int *elements;
     int *inv_elements;
@@ -38,23 +37,23 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
 #ifdef _USECUDA
     int *_d_elements;
     int *_d_inv_elements;
-    double *_d_gauss_weight; 
     int *_d_map23;
+    int *_d_fixed;
+    int *_d_colorids;
+    class G_Matrix33 *_d_VIRIAL_IND;
+
+    double *_d_gauss_weight; 
+    double *_d_dFdu;        
+    double *_d_EPOT;
+    double *_d_EPOT_IND;
+    double* _d_EPOT_RMV;
     G_Vector3 *_d_SR;
     G_Vector3 *_d_SRref;       
     G_Vector3 *_d_Rref;        
     G_Vector3 *_d_F;
     G_Vector3 *_d_F_padding; //for padding forces of elements
-    double *_d_dFdu;        
     G_Matrix33 _d_H;
 
-    //The following device pointers are not yet memcpied. 
-    int *_d_colorids;
-    int *_d_fixed;
-    double *_d_EPOT;
-    double *_d_EPOT_IND;
-    double* _d_EPOT_RMV;
-    class G_Matrix33 *_d_VIRIAL_IND;
 #endif
 
     char ELEMENT_TYPE[100], ELEMENT_INT_TYPE[100];
@@ -75,25 +74,29 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
 
 public:
     FEMFrame():_NELE(0),_NNODE_PER_ELEMENT(0),_NINT_PER_ELEMENT(0),
-      elements(0),gauss_weight(0),dFdu(0),_SRref(0),_Rref(0), _ReadColorID(0),
-      n_bdy_nodes(0),n_bdy_tags(0), n_existed_atoms(_NP), nfemNodes(0) {};
+      elements(0),gauss_weight(0),dFdu(0),_SRref(0),_Rref(0), n_bdy_nodes(0),n_bdy_tags(0), n_existed_atoms(_NP), nfemNodes(0), _ReadColorID(0) {};
+    virtual ~FEMFrame() {
+      delete(win);
+#ifdef _USECUDA
+     free_device_ptr();
+#endif
 
+    } 
     void RtoRref();
     int read_elements(const char*);
     int read_fem_coeff(const char*);
     int read_uniform_fem_coeff(const char*);
     int read_element_wise_fem_coeff(const char*, int);
     int read_1stfem_to_Alloc(const char*);
-    Matrix33 host_getEigenF(Vector3 p, Matrix33 Fdef);
+    Matrix33 getEigenF(Vector3 p, Matrix33 Fdef);
 
     void WriteStressCoord();
 
-    void test_saxpy();
     void beam_fem_energy_force();
     void create_inverse_connectivities_matrix();
     void islam_fem_energy_force();
     void snap_fem_energy_force();
-    void snap_fem_energy_force_1();
+    void cuda_snap_fem_energy_force();
 
     virtual void potential();
 
@@ -114,7 +117,6 @@ public:
 public:
   char fem_bdy_nodes_file[MAXFILENAMELEN];
   char contact_file[MAXFILENAMELEN];
-
   int *bNds, *bTags;
   int *cNds;
   double *bXs, *bYs, *bZs;
@@ -127,6 +129,7 @@ public:
 
   int read_bdy_nodes(const char*);
   int read_contact(const char*);
+  int _ReadColorID;
   //int read_elements(const char*);
 #ifdef _PARALLEL
   void Broadcast_FEM_Param();
@@ -136,10 +139,12 @@ public:
   void shift_fem_node_id(int);
 
 #ifdef _USECUDA
-  void cuda_memcpy_init_all(void);
-  void cuda_memory_alloc(int);
-  void cuda_memory_alloc_elements(int);
-  void cuda_memory_alloc_element_coeff(int, int);
+  int test_saxpy();
+  void cuda_memcpy_all(void);
+  void cuda_memory_alloc(void);
+  void cuda_memory_alloc_elements(void);
+  void cuda_memory_alloc_element_coeff(void);
+  void free_device_ptr(void);
 #endif
 };
 

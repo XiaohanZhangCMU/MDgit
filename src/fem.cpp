@@ -65,7 +65,7 @@ int FEMFrame::exec(const char *name)
   bindcommand(name,"test_saxpy",test_saxpy());
 
 #ifdef _USECUDA
-  bindcommand(name,"cuda_memcpy_init_all", cuda_memcpy_init_all());
+  bindcommand(name,"cuda_memcpy_all", cuda_memcpy_all());
 #endif
 
 #ifdef _PARALLEL
@@ -105,7 +105,7 @@ void FEMFrame::Alloc()
     for(int i=0;i<_NP;i++) _VSR[i].clear();
 
 #ifdef _USECUDA
-    cuda_memory_alloc(size);
+    cuda_memory_alloc();
 #endif
 }   
 
@@ -114,15 +114,13 @@ void FEMFrame::Alloc_Elements()
     int size1, size2;
     size1 = _NELE*_NNODE_PER_ELEMENT;
     Realloc(elements,int,size1);
-    Realloc(inv_elements,int,_MAX_NELEM_SHARE_NODE*_NP);
-
     bindvar("elements",elements,INT);
     size2 = _NELE*_NFACE_PER_ELEMENT;
     Realloc(colorids,int,size2);
 
 #ifdef _USECUDA
     //We need colorids only for plotting
-    cuda_memory_alloc_elements(size1);
+    cuda_memory_alloc_elements();
 #endif
 
 }
@@ -137,30 +135,7 @@ void FEMFrame::Alloc_Element_Coeff()
     Realloc(dFdu,double,size);
     bindvar("dFdu",dFdu,DOUBLE);
 #ifdef _USECUDA
-    cuda_memory_alloc_element_coeff(_NINT_PER_ELEMENT, size);
-#endif
-}
-
-void FEMFrame::create_inverse_connectivities_matrix() { 
-   
-  int i, j, k, jpt;
-  for (i = 0; i< _NP; i++) for (k = 0;k<_MAX_NELEM_SHARE_NODE;k++) inv_elements[i*_MAX_NELEM_SHARE_NODE+k] = -1;
-
-  for (i = 0; i< _NELE; i++ ) {
-    for (j = 0; j< _NNODE_PER_ELEMENT; j++ ) {
-      jpt = elements[_NNODE_PER_ELEMENT*i + j];
-      k = 0;
-      for (k = 0; k < _MAX_NELEM_SHARE_NODE; k++) {
-        if (inv_elements[jpt*_MAX_NELEM_SHARE_NODE+k] == -1) { 
-          inv_elements[jpt*_MAX_NELEM_SHARE_NODE+k] = i*_NNODE_PER_ELEMENT +j;
-          break;
-        }
-      }
-      if (k == _MAX_NELEM_SHARE_NODE) FATAL("Too many elements share a node!");
-    }
-  } 
-#if _USECUDA
-  cudaMemcpy(_d_inv_elmeents,  inv_elements,   _NP*_MAX_NELEM_SHARE_NODE*sizeof(int), cudaMemcpyHostToDevice);
+    cuda_memory_alloc_element_coeff();
 #endif
 }
 
@@ -210,7 +185,6 @@ int FEMFrame::read_elements(const char* fname)
     //INFO_Printf("\n");
 
     Free(buffer);
-
     return 0;
 }
 
@@ -746,7 +720,11 @@ void FEMFrame::potential() {
          beam_fem_energy_force();
          break;
       case 1:
+#ifdef _USECUDA
+         cuda_snap_fem_energy_force();
+#else
          snap_fem_energy_force();
+#endif
          break;
       case 2:
          islam_fem_energy_force();
@@ -755,6 +733,445 @@ void FEMFrame::potential() {
       FATAL("Need to set EquationType in script\n");
    }
 }
+
+void FEMFrame::snap_fem_energy_force() {
+  /* no need of neighbor list */
+  int i,iele,j,jpt,iA, in, ip, iq, ind, p, q, r;
+  Vector3 dsj, drj, elem_center;
+  Matrix33 Fe, Fdef, B, C, Cinv, FCinvtran, dEdF, hinv;
+  Matrix33 eigF, invEigF;
+  double Eele, Eint, Jet, trace, detB, J2;
+  double lambda, mu, temp;
+    /*
+      Xiaohan: print out stress in the membrane
+    */    
+    Matrix33 E, E2, I, pk2, temp1, temp2;    
+    I[0][0]=I[1][1]=I[2][2]=1;
+
+    //    int map23[2] = {0, 2};
+
+    DUMP("FEM");
+
+    /* _EPOT, _F, _EPOT_IND, _VIRIAL all local */
+    _EPOT=0; //put this back
+    for(i=0;i<_NP;i++) {
+      /* xiaohan: this removes the interaction between substrate with fe nodes which have species = 2*/
+      // if (species[i] == 0) 
+      // 	continue;
+      _F[i].clear(); _EPOT_IND[i]=0; _EPOT_RMV[i]=0; _VIRIAL_IND[i].clear();
+    }
+
+    _VIRIAL.clear();
+    hinv = _H.inv();
+
+    for(iele=0;iele<_NELE;iele++) {
+      /* energy of this element */
+      Eele = 0;
+
+      /* center of the element */
+      elem_center.clear();elem_center[0] = elem_center[1]=elem_center[2]= 0;
+      for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	jpt=elements[iele*_NNODE_PER_ELEMENT+j];	
+        for (i = 0;i<_NDIM;i++)  {
+	  elem_center[i] += 1.0/_NNODE_PER_ELEMENT *_Rref[jpt][i];  /* put this into a separate function RrefHtoSref */
+//	  INFO_Printf("elem_center[%d] = %g\n", i, elem_center[i]);
+	}
+      }
+
+      for(iA=0;iA<_NINT_PER_ELEMENT;iA++) {
+	/* energy of this Gauss integration point */
+	Eint = 0;
+	/* deformation gradient */
+	Fdef.clear(); Fdef[0][0] = Fdef[1][1] = Fdef[2][2] = 1.0;
+	for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	  jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	  
+	  _SRref[jpt ] = hinv*_Rref[jpt];  /* put this into a separate function RrefHtoSref */
+	  dsj = _SR[jpt] - _SRref[jpt];
+	  dsj.subint();
+	  _H.multiply(dsj, drj);
+	  
+	  /* Add contribution from drj to F using dFdu */
+	  for(ip=0;ip<_NDIM;ip++) {
+	    for(iq=0;iq<_NDIM;iq++) {
+	      for(in=0;in<_NDIM;in++) {
+		ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		//Fdef[ip][iq] += dFdu[ind]*drj[in]; 
+		if (_NDIM == 2)
+		  Fdef[ip][iq] += dFdu[ind]*drj[map23[in]]; 
+		else //_NDIM == 3
+		  Fdef[ip][iq] += dFdu[ind]*drj[in];
+	      } } }
+	}
+
+	eigF = getEigenF(elem_center, Fdef);
+	invEigF = eigF.inv();
+	Fe = Fdef*invEigF;     
+	E = Fe.tran()*Fe-I;
+	B = Fe*Fe.tran();
+	C = Fe.tran()*Fe;
+	Cinv = C.inv();
+//	FCinvtran = Fdef*Cinv.tran();
+	Jet = Fdef.det();  J2 = Jet*Jet;
+	detB = B.det(); 
+	Eint = 0;
+
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 2) {
+	  trace = B[0][0] + B[1][1];
+	  Eint = 0.5*(trace + 1.0/detB - 3); /* multiply MU and V0 later */
+	  dEdF = FCinvtran*(-1.0/J2) + Fdef; /* multiply MU later */
+	  /* Add contribution from drj to F using dFdu */
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][map23[in] ] -= dEdF[ip][iq]*dFdu[ind]; 
+		} } } }
+	}
+
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 3) {
+	  mu = 1; lambda = 1.95;
+		
+#if defined NeoHooken
+	  Eint = 1.0/8.0 * (0.5*lambda*log(Jet)*log(Jet) - mu*log(Jet) + 0.5*mu*(C.trace()-3));
+	  temp1 = I;
+	  temp1*= lambda * log(Jet);
+	  temp2 = I;
+	  temp2 = temp2-Cinv;
+	  temp2*= mu;
+	  pk2  = temp1 + temp2;
+	  dEdF = Fdef * pk2;
+#else
+          E2 = E*E;
+ 	  dEdF.clear();
+	  for (i = 0;i<_NDIM;i++)
+	    for (j = 0;j<_NDIM;j++)
+	      for (p = 0;p<_NDIM;p++)
+		for (r = 0;r<_NDIM;r++) {
+		  temp = 0;
+		  for (q = 0;q<_NDIM;q++)
+		    temp += 2*mu*invEigF[j][p]*Fdef[i][r]*invEigF[r][q]*E[p][q] + 
+		      2*mu*invEigF[r][p]*Fdef[i][r]*invEigF[j][q]*E[p][q];
+		  dEdF[i][j] += 0.5*(2*lambda*E.trace()*invEigF[j][p]*Fdef[i][r] * invEigF[r][p] + temp);
+		}
+	  Eint = 0.5*lambda*(E.trace())*(E.trace()) + mu*(E2.trace());
+#endif
+	  /* Add contribution from drj to F using dFdu */
+
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][in ] -= dEdF[ip][iq]*dFdu[ind]; 				
+		} } } }
+	}
+            /* Add contribution from Eint to Eele */
+	Eele += gauss_weight[iA]*Eint;
+      }
+      _EPOT += Eele;
+    }
+}  
+
+void FEMFrame::islam_fem_energy_force() {
+    /* no need of neighbor list */
+    int i,iele,j,jpt,iA, in, ip, iq, ind;
+    Vector3 dsj, drj;
+    Vector3 vec1, vec2, normal;
+    Matrix33 Fdef, B, C, Cinv, FCinvtran, dEdF, hinv;
+    double Eele, Eint, Jet, trace, detB, J2;
+    double lambda, mu;
+    /*
+      Xiaohan: print out stress in the membrane
+    */    
+    Matrix33 E,Eavg, E2 , I, pk2, temp1, temp2;    
+    I[0][0]=I[1][1]=I[2][2]=1;
+    std::ofstream w_ofs("energy.out", std::ofstream::out | std::ofstream::app);
+    std::ofstream e11_ofs ("strain11.out", std::ofstream::out | std::ofstream::app);
+    std::ofstream e12_ofs ("strain12.out", std::ofstream::out | std::ofstream::app);
+    std::ofstream e22_ofs ("strain22.out", std::ofstream::out | std::ofstream::app);
+    std::ofstream neb_dump("gp_rawdata.out", std::ofstream::out | std::ofstream::app);
+    DUMP("FEM");
+
+    /* _EPOT, _F, _EPOT_IND, _VIRIAL all local */
+    _EPOT=0; //put this back
+    for(i=0;i<_NP;i++) { _F[i].clear(); _EPOT_IND[i]=0; _EPOT_RMV[i]=0; _VIRIAL_IND[i].clear(); }
+
+    _VIRIAL.clear();
+    hinv = _H.inv();
+    WriteStressCoord();
+
+    for(iele=0;iele<_NELE;iele++) {
+      /* energy of this element */
+      Eele = 0;
+      Eavg.clear();
+      int dfdustart = iele* _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT ;
+      if (curstep%printfreq==0) { neb_dump<<iele<<" "; }
+      for(iA=0;iA<_NINT_PER_ELEMENT;iA++) {
+	/* energy of this Gauss integration point */
+	Eint = 0;
+	/* deformation gradient */
+	Fdef.clear(); Fdef[0][0] = Fdef[1][1] = Fdef[2][2] = 1.0;
+	for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	  jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	  
+	  _SRref[jpt ] = hinv*_Rref[jpt];  /* put this into a separate function RrefHtoSref */
+	  dsj = _SR[jpt] - _SRref[jpt];
+	  dsj.subint();
+	  _H.multiply(dsj, drj);
+	  /* Add contribution from drj to F using dFdu */
+	  for(ip=0;ip<_NDIM;ip++) {
+	    for(iq=0;iq<_NDIM;iq++) {
+	      for(in=0;in<_NDIM;in++) {
+		ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		if (_NDIM == 2)
+		  Fdef[ip][iq] += dFdu[dfdustart+ind]*drj[map23[in]]; 
+		else //_NDIM == 3
+		  Fdef[ip][iq] += dFdu[dfdustart+ind]*drj[in];
+	      } } }
+	}
+
+	E = Fdef.tran()*Fdef-I;
+	B = Fdef*Fdef.tran();
+	C = Fdef.tran()*Fdef;
+	Cinv = C.inv();
+	FCinvtran = Fdef*Cinv.tran();
+	Jet = Fdef.det();  J2 = Jet*Jet;
+	detB = B.det(); 
+	Eint = 0;
+	Eavg += E;
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 2) {
+	  double MU = 1;
+	  trace = B[0][0] + B[1][1];
+	  Eint = 0.5*(trace + 1.0/detB - 3); /* multiply MU and V0 later */
+	  dEdF = FCinvtran*(-1.0/J2) + Fdef; /* multiply MU later */
+	  Eint *= MU;
+	  dEdF *= MU;
+
+	  /* Add contribution from drj to F using dFdu */
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][map23[in] ] -= dEdF[ip][iq]*dFdu[dfdustart+ind]; 
+		} } } }
+	}
+
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 3) {
+	  mu = 0.1; lambda = 1e3;
+		
+#if defined NeoHooken
+	  Eint = 1.0/8.0 * (0.5*lambda*log(Jet)*log(Jet) - mu*log(Jet) + 0.5*mu*(C.trace()-3));
+	  temp1 = I;
+	  temp1*= lambda * log(Jet);
+	  temp2 = I;
+	  temp2 = temp2-Cinv;
+	  temp2*= mu;
+	  pk2  = temp1 + temp2;
+	  dEdF = Fdef * pk2;
+#else
+	  E2 = E*E;
+	  Eint = 0.5*lambda*(E.trace())*(E.trace()) + mu*(E2.trace());
+	  temp1 = I; 
+	  temp1 *= E.trace()*lambda;
+	  temp2 = E;
+	  temp2 *= 2*mu;
+	  pk2  = temp1 + temp2;
+	  dEdF = Fdef * pk2;
+#endif
+	  /* Add contribution from drj to F using dFdu */
+
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][in ] -= dEdF[ip][iq]*dFdu[dfdustart+ind]; 				
+		} } } }
+	}
+            /* Add contribution from Eint to Eele */
+        
+	Eele += gauss_weight[iA]*Eint;
+
+        if (curstep%printfreq==0) { neb_dump<<Eint<<" "; }
+      }
+      _EPOT += Eele;
+      if (curstep%printfreq==0) {
+            w_ofs<< Eele <<" ";
+            e11_ofs<< Eavg[0][0]/_NINT_PER_ELEMENT<<" ";
+            e12_ofs<< Eavg[0][1]/_NINT_PER_ELEMENT<<" ";
+            e22_ofs<< Eavg[1][1]/_NINT_PER_ELEMENT<<" ";
+            neb_dump<<std::endl;
+      }
+   }
+   if (curstep%printfreq==0) {
+       w_ofs << std::endl;
+       e11_ofs << std::endl;
+       e12_ofs << std::endl;
+       e22_ofs << std::endl;
+   }
+}  
+
+
+
+void FEMFrame::beam_fem_energy_force() {
+    /* no need of neighbor list */
+    int i,iele,j,jpt,iA, in, ip, iq, ind;
+    Vector3 dsj, drj;
+    Vector3 vec1, vec2, normal;
+    Matrix33 Fdef, B, C, Cinv, FCinvtran, dEdF, hinv;
+    double Eele, Eint, Jet, trace, detB, J2;
+    double lambda, mu;
+    /*
+      Xiaohan: print out stress in the membrane
+    */    
+    Matrix33 E, E2, I, pk2, temp1, temp2;    
+    I[0][0]=I[1][1]=I[2][2]=1;
+
+    //    int map23[2] = {0, 2};
+
+    DUMP("BEAM");
+
+    /* _EPOT, _F, _EPOT_IND, _VIRIAL all local */
+    _EPOT=0; //put this back
+    for(i=0;i<_NP;i++) {
+      /* xiaohan: this removes the interaction between substrate with fe nodes which have species = 2*/
+      // if (species[i] == 0) 
+      // 	continue;
+      _F[i].clear(); _EPOT_IND[i]=0; _EPOT_RMV[i]=0; _VIRIAL_IND[i].clear();
+    }
+
+    _VIRIAL.clear();
+    hinv = _H.inv();
+
+    for(iele=0;iele<_NELE;iele++) {
+      /* energy of this element */
+      Eele = 0;
+      
+      for(iA=0;iA<_NINT_PER_ELEMENT;iA++) {
+	/* energy of this Gauss integration point */
+	Eint = 0;
+	/* deformation gradient */
+	Fdef.clear(); Fdef[0][0] = Fdef[1][1] = Fdef[2][2] = 1.0;
+	for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	  jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	  _SRref[jpt ] = hinv*_Rref[jpt];  /* put this into a separate function RrefHtoSref */
+	  dsj = _SR[jpt] - _SRref[jpt];
+	  dsj.subint();
+	  _H.multiply(dsj, drj);
+	  /* Add contribution from drj to F using dFdu */
+	  for(ip=0;ip<_NDIM;ip++) {
+	    for(iq=0;iq<_NDIM;iq++) {
+	      for(in=0;in<_NDIM;in++) {
+		ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		if (_NDIM == 2)
+		  Fdef[ip][iq] += dFdu[ind]*drj[map23[in]]; 
+		else //_NDIM == 3
+		  Fdef[ip][iq] += dFdu[ind]*drj[in];
+	      } } }
+	}
+
+	E = Fdef.tran()*Fdef-I;
+	B = Fdef*Fdef.tran();
+	C = Fdef.tran()*Fdef;
+	Cinv = C.inv();
+	FCinvtran = Fdef*Cinv.tran();
+	Jet = Fdef.det();  J2 = Jet*Jet;
+	detB = B.det(); 
+	Eint = 0;
+
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 2) {
+	  double MU = 1;
+	  trace = B[0][0] + B[1][1];
+	  Eint = 0.5*(trace + 1.0/detB - 3); /* multiply MU and V0 later */
+	  dEdF = FCinvtran*(-1.0/J2) + Fdef; /* multiply MU later */
+	  Eint *= MU;
+	  dEdF *= MU;
+
+	  /* Add contribution from drj to F using dFdu */
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][map23[in] ] -= dEdF[ip][iq]*dFdu[ind]; 
+		} } } }
+	}
+
+	/* Add contribution from F to Eint */ 
+	if (_NDIM == 3) {
+	  mu = 0.1; lambda = 1e3;
+		
+#if defined NeoHooken
+	  Eint = 1.0/8.0 * (0.5*lambda*log(Jet)*log(Jet) - mu*log(Jet) + 0.5*mu*(C.trace()-3));
+	  temp1 = I;
+	  temp1*= lambda * log(Jet);
+	  temp2 = I;
+	  temp2 = temp2-Cinv;
+	  temp2*= mu;
+	  pk2  = temp1 + temp2;
+	  dEdF = Fdef * pk2;
+#else
+	  E2 = E*E;
+	  Eint = 0.5*lambda*(E.trace())*(E.trace()) + mu*(E2.trace());
+	  temp1 = I; 
+	  temp1 *= E.trace()*lambda;
+	  temp2 = E;
+	  temp2 *= 2*mu;
+	  pk2  = temp1 + temp2;
+	  dEdF = Fdef * pk2;
+#endif
+	  /* Add contribution from drj to F using dFdu */
+
+	  for(j=0;j<_NNODE_PER_ELEMENT;j++) {
+	    jpt=elements[iele*_NNODE_PER_ELEMENT+j];
+	    for(ip=0;ip<_NDIM;ip++) {
+	      for(iq=0;iq<_NDIM;iq++) {
+		for(in=0;in<_NDIM;in++) {
+		  ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+		  if (fixed[jpt] == 0)				  
+		    _F[jpt][in ] -= dEdF[ip][iq]*dFdu[ind]; 				
+		} } } }
+	}
+            /* Add contribution from Eint to Eele */
+	Eele += gauss_weight[iA]*Eint;
+      }
+      _EPOT += Eele;
+    }
+}  
+
+Matrix33 FEMFrame::getEigenF(Vector3 p, Matrix33 Fdef) {
+  Matrix33 I;    
+  I[0][0]=I[1][1]=I[2][2]=1;
+   if (p[2] <= y_eigen_zbound_max && p[2] >= y_eigen_zbound_min) { 
+    I[1][1] = y_eigen_strain;
+   }
+  if (p[2] <= x_eigen_zbound_max && p[2] >= x_eigen_zbound_min) {
+    I[0][0] = x_eigen_strain;
+  }
+  
+  return I;
+}
+
+
+
 
 #ifdef _PARALLEL
 void FEMFrame::Broadcast_FEM_Param()
