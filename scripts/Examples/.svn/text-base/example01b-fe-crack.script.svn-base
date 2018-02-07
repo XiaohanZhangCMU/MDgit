@@ -1,0 +1,50 @@
+# -*-shell-script-*-
+setnolog
+setoverwrite
+dirname = runs/fe-example
+shmsize = 31457280 shmallocate #10MB
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/fe_pot readpot
+#------------------------------------------------------------
+#Create Perfect Crystal Structure
+#
+latticestructure = body-centered-cubic latticeconst = 2.8665 #(A) for Fe
+latticesize = [  1      1     -2   10
+                 1     -1      0   18
+                 0.5   0.5   0.5   25  ]
+makecrystal finalcnfile = perf.cn writecn                
+#-------------------------------------------------------------
+#Create a void
+input = [ 1  0 0 0  15 5 40 ] removeellipsoid finalcnfile = void.cn writecn
+#-------------------------------------------------------------
+#Apply strain
+input = [ 2 2 0.07 ] shiftbox
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"
+plot_color_windows = [ 1
+                       -4.2 -3 4  #color04 = cyan
+                     ]
+plot_color_bar = [ 1 -4.2 -3.6 ]
+plot_select = 5 plot_highlight = [ 0 0 1 2 3 4 5 6 7 8 9 ]
+plotfreq = 10 
+rotateangles = [ 0 0 0 1.2 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+conj_ftol = 5e-5 conj_itmax = 1000 conj_fevalmax = 1000
+conj_fixbox = 1 
+relax finalcnfile = relaxed.cn writecn
+#sleep quit
+quit
+#-------------------------------------------------------------

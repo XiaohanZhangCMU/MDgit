@@ -1,0 +1,54 @@
+# -*-shell-script-*-
+# MD++ input script
+# Function: illustrate edge dislocation in a simple cubic lattice
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/CSD-book/edge
+shmsize = 20971520 shmallocate #20MB
+#-------------------------------------------------------------
+#Create Perfect Crystal
+# a hypothetical simple cubic crystal
+latticestructure = simple-cubic latticeconst = 3 #(in Angstrom)
+latticesize = [  1   0   0   8
+                 0   1   0   8
+                 0   0   1   6 ]
+allocmultiple = 2
+makecrystal finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#Cut away boundary atoms
+input = [ 1  0.40 10   -10 10 -10 10 ] fixatoms_by_position
+input = [ 1  -10 -0.30 -10 10 -10 10 ] fixatoms_by_position
+input = [ 1  -10 10 0.45 10   -10 10 ] fixatoms_by_position
+input = [ 1  -10 10 -10 -0.35 -10 10 ] fixatoms_by_position
+removefixedatoms
+#-------------------------------------------------------------
+#Create Dislocation by inserting atoms
+input = [
+             3 1 #z(dislocation line), x(dipole direction)
+            -0.125 0 0 #(burgers vector relative to box edge)
+#             0.0625 -1.4375 0.05 #(edge center)
+#             0.0625 -1.5625 -0.075 #(edge -1)
+#             0.0625 -1.3125 0.175  #(edge +1)
+#             0.0625 -1.1875 0.3    #(edge +2)
+            -0.0625 -1.4375 0.05 #(edge center)
+             0.305 #\nu
+             0 0 0 0 0  #number of images, 1: shiftbox
+             0 0 0 0 ]
+makedipole finalcnfile = makedp.cn writecn
+#input = [ 1 1 -0.05 ] redefinepbc #shiftbox back
+#------------------------------------------------------------
+#Plot Configuration
+#
+atomradius = 0.4 bondradius = 0.04 bondlength = 3.34
+atomcolor = orange highlightcolor = purple  bondcolor = gray60 
+fixatomcolor = gray80 #red #yellow
+win_width = 400 win_height = 400 backgroundcolor = gray70
+plot_atom_info = 1 plotfreq = 10 
+rotateangles = [ 0 -2 0 1.4 0.5e-3 ]
+win_width = 500 win_height = 500
+#win_width = 250 win_height = 250
+#openwin alloccolors rotate saverot refreshnnlist eval plot
+openwin reversergb alloccolors rotate saverot refreshnnlist eval plot
+sleep quit
+#-------------------------------------------------------------

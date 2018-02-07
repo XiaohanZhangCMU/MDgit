@@ -1,0 +1,46 @@
+#!/bin/bash
+#PBS -N PNAS_Step3c
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+echo $PWD
+
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.095 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.100 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.105 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.110 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.115 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.120 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.125 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 100 0.130 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 200 0.125 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C3_make_non0K_pure_shear_stress_cell.tcl 300 0.125 &
+
+wait
+#wipe $PBS_NODEFILE
+

@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -N PNAS_Step0-0a
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=999:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+## cd $PBS_O_WORKDIR
+cd /home/xzhang11/Planet/Libs/MD++UMB.svn3
+
+echo $PWD
+
+sleep 1
+bin/sw_mc2 scripts/work/SiHomo-skin/ss_si.tcl 0
+
+wait
+#wipe $PBS_NODEFILE
+

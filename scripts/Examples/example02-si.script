@@ -1,0 +1,90 @@
+# -*-shell-script-*-
+# MD code of Stillinger-Weber Si 
+# (screw dislocation motion under fixed boundary)
+puts "I am here"
+setnolog
+setoverwrite
+dirname = runs/si-example
+#------------------------------------------------------------
+#Read in structure
+#
+#incnfile = ~/Codes/MD++/structures/vasp/shuffle-B-1x4x2.cn readcn
+#incnfile = ~/Codes/MD++/structures/vasp/shuffle-A-1x4x2.cn readcn
+#
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+latticesize = [ 1  0  0 3    #(x)
+                0  1  0 3   #(y)
+                0  0  1 3  ] #(z)
+#makecnspec = [ 1  1 -2 4    #(x)
+#               1  1  1 2   #(y)
+#               1 -1  0 1  ] #(z)
+makecrystal finalcnfile = perf.cn writecn
+input = [1 2 0.1] shiftbox eval quit
+#input = [ 2 2 -0.05 ] redefinepbc
+#input = [ 1 1 1.4 ] shiftbox freeallatoms
+input = [ 1 0 ] fixatoms_by_ID removefixedatoms
+#-------------------------------------------------------------
+#
+#Create Dislocation Dipole by using linear elastic solutions
+# box is shifted accordingly to relieve internal stress
+#
+#the following setting creates shuffle screw in the 3x1x3 432 atom cell
+#time to relax (fixbox) 31seconds on MMM (unoptimized)   9seconds(opt)
+#                       15seconds on ASM (unoptimized)   8seconds(opt)
+#mkdipole = [ 3 2 #z(dislocation line), y(dipole direction)
+#             0 0 0.5 #(bx,by,bz)
+#             -0.02 -0.22 0.28
+#             0.305    -10 10 -10 10  0 ] #nu, number of images, shiftbox
+#makedipole finalcnfile = makedp.cn writecn #create dislocation dipole
+#
+#------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.9 #bondradius = 0.3 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red backgroundcolor = gray
+fixatomcolor = yellow
+color00 = "orange"  color01 = "purple" color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"
+plot_color_windows = [ 2
+                          -10 -4.5 0  #color00 = orange
+                          -4.5 10  1  #color01 = purple
+                     ]
+plot_atom_info = 1
+plotfreq = 10
+rotateangles = [ 0 0 0 1.2 ]
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Calling MDCASK
+#
+#MDCASKpot = SW finalcnfile = mdyn.dat writeMDCASK
+#command = ~/Codes/MD++/MDCASK/moldy  runcommand
+#incnfile = mdyn.con readMDCASK eval plot
+#MDCASKpot = TERSOFF finalcnfile = mdyn.dat writeMDCASK
+#command = ~/Codes/MD++/MDCASK/moldy  runcommand
+#incnfile = mdyn.con readMDCASK eval plot
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 3000
+conj_fixbox = 1 #conj_monitor = 1 conj_summary = 1
+relax finalcnfile = relaxed.cn writecn
+sleep quit
+#-------------------------------------------------------------
+#Calling Elton's F90 Conjugate-Gradient relaxation
+#
+fortranpath = ~/Codes/MD++/F90SW potfile = Si.pot fortranexe = RelaxSW
+#
+conj_fixbox = 1  #stress is meaningful only if allow box to relax
+#stress = [ 0 100 0
+#           100 0 0
+#           0 0 0 ] #(stress in MPa)
+conj_fevalmax = 1000  fortranrelax eval plot
+sleep quit
+#-------------------------------------------------------------

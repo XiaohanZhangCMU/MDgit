@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -N PNAS_US_105_400
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=72:00:00
+#PBS -V
+# cd 
+# echo /home/xzhang11/Planet/Libs/MD++.svn
+cd /home/xzhang11/Planet/Libs/MD++.svn
+
+declare -i f 
+f=0
+while (( $f < 24 ))
+do
+ bin1/eam_mc2 scripts/work/PNAShomo/C7_run_US.tcl $f 24 105 400 &
+ sleep 17
+ let f+=1
+done
+
+wait

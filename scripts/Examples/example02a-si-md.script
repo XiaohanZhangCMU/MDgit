@@ -1,0 +1,95 @@
+# -*-shell-script-*-
+# MD code of Stinger-Weber Silicon
+setnolog
+setoverwrite
+dirname = runs/si-example
+
+#------------------------------------------------------------
+#Read in structure
+#
+#incnfile = relaxed.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+crystalstructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+latticesize  = [ 1 0 0 4
+                 0 1 0 4
+                 0 0 1 4 ]
+makecrystal  writecn
+#-------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.67 bondradius = 0.3 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red backgroundcolor = gray70
+#plot_color_bar = [ 1 -4.85 -4.50 ]  highlightcolor = red
+plotfreq = 10  rotateangles = [ 0 0 0 1.25 ] #[ 0 -90 -90 1.5 ]
+openwin  alloccolors rotate saverot eval plot
+#sleep quit
+#------------------------------------------------------------
+#Calculate Hessian matrix
+#timestep = 0.001 calHessian
+#------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 10000
+conj_fixbox = 1 #conj_monitor = 1 conj_summary = 1
+relax finalcnfile = relaxed.cn writecn
+#quit
+#sleep quit
+#-------------------------------------------------------------
+#Move some atoms
+#moveatomspec = [ 1 0.6 0.1 0 31 ] moveatom
+#eval plot
+#sleep quit
+#-------------------------------------------------------------
+#
+#Calculate phonon dispersion curve
+#hrescale = 1.25 scaleH
+#basisatoms = [ 2  0 4  1 2 3 ]  #(basis atoms, and 3 atoms to specify repeat vectors)
+#calphonondispspec = [ 1  0 0 0   0.5 0.5 0.5  2 #GAMMA-K
+#                      ]
+#calphonondisp  quit              
+#-------------------------------------------------------------
+#
+#MD settings           
+T_OBJ = 300 #Kelvin
+equilsteps = 0  totalsteps = 100 timestep = 0.0001 # (ps)
+atommass = 28.0855 # (g/mol)
+#atomTcpl = 200.0 boxTcpl = 20.0
+DOUBLE_T = 0
+srand48bytime
+initvelocity totalsteps = 10000 saveprop = 0
+#integrator_type = 1 #0: Gear6, 1: Velocity Verlet
+saveprop = 1 savepropfreq = 10 openpropfile #run
+#usenosehoover = 1  vt2 = 2e28  #1e28 2e28 5e28
+ensemble_type = NVE integrator_type = VVerlet
+##  vt2 is 3NkBT / Ms in s^(-2)
+#
+#stress = [ 0 0 0
+#           0 0 0
+#           0 0 0 ]
+#sleep quit
+#
+#Test MD run
+#
+#run
+#restoreH
+#quit
+#
+#-------------------------------------------------------------
+#
+#Strain-to-Failure MD Simulation
+#
+#totalsteps = 1000
+totalsteps = 10000
+saveprop = 1 savepropfreq = 10 openpropfile
+plotfreq = 1 #autowritegiffreq = 10
+run finalcnfile = si100.cn writecn
+#rescale = 1.01 scaleh
+#run finalcnfile = si101.cn writecn
+#unscaleh
+sleep
+quit
+

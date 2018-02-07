@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -N PNAS_Step8c
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+
+T=200
+T1=300
+
+sleep 1
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 107 092 200 &
+sleep 1
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 107 092 300 &
+sleep 
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 108 092 300 &
+sleep 1
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 108 092 400 &
+sleep 1
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl  9  48 125 200 &
+sleep 
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl  8  41 130 200 &
+sleep 1
+./bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl  8  47 125 300 &
+
+wait
+#wipe $PBS_NODEFILE
+

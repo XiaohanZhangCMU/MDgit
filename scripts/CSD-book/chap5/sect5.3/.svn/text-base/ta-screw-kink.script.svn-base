@@ -1,0 +1,69 @@
+# -*-shell-script-*-
+# Create screw dislocation in BCC Ta with kinks under PBC
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/ta-screw-kink
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/ta_pot readpot
+#------------------------------------------------------------
+#Read in structure
+#incnfile = ta-screw-kink.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = body-centered-cubic latticeconst = 3.3058 #(A) for Ta
+latticesize = [  1   1  -2   19    
+                 1  -1   0   5
+                 0.5   0.5   0.5   1
+              ]
+allocmultiple = 60         # anticipating system size to increase
+makecn finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#Create Dislocation Dipole
+#(screw) [111]
+mkdipole = [ 3             # z (dislocation line)
+             1             # x (dipole direction)
+             0 0 -1        #   (Burgers vector relative to box)
+             -0.05 -0.2544 0.2456 #(19x5x3)
+             0.305         # nu
+             -10 10 -10 10 #number of images
+             1             # tilt box
+             0 0 0 0 ]
+# create screw dislocation dipole
+makedipole finalcnfile = makedp.cn writecn
+#
+# replicating system 60 times along z-direction
+input = [ 3 60 ] extendbox finalcnfile = extend.cn writecn
+#
+# tilt box vector c3 := c3 + 0.0526 * c1 to create kinks 
+input = [ 3 1 .0526315789 ] redefinepbc finalcnfile = shift.cn writecn
+#
+#------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+plot_color_windows = [ 1
+                       -8.0  0.0  8 #color08 = blue
+                      ]
+plot_atom_info = 3  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+#win_width = 200 win_height = 200
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-10 conj_itmax = 1000 conj_fevalmax = 10000
+conj_fixbox = 1
+relax finalcnfile = relaxed.cn writecn eval
+sleep quit
+#-------------------------------------------------------------

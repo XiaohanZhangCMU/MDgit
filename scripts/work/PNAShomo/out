@@ -1,0 +1,143 @@
+1,2c1
+< # -*-shell-script-*-
+< # MD code for making FCC Cu pure shear stress 
+---
+> # MD++ code for making 0K pure shear stress cell
+5c4,10
+< set maxiter 100
+---
+> if { $argc == 0 } {
+>    set epsilon 0.110
+> } elseif { $argc > 0 } {
+>    set epsilon [ lindex $argv 0 ]
+> } 
+>    set epVAL [ format %03d [ expr int($epsilon*1000) ] ]
+> 
+6a12,15
+> MD++ srand48bytime
+> MD++ initvelocity_type="Gaussian"
+> 
+> # initialize MD++
+7a17
+> ##
+8a19
+> ##
+11,19c22
+< 
+< set check [ glob -nocomplain runs/shear_copper ]
+< set key [ llength $check ]
+< if { $key < 1 } {
+< exec mkdir runs/shear_copper
+< }
+< 
+< 
+< MD++ dirname = runs/ho-cu-DN/0K_stressstrain
+---
+> MD++ dirname = runs/ho-cu-DN/0K_${epVAL}eps_112
+27c32
+< #make a crystal structure 
+---
+> #Read in structure (created by mo-edge-make.script)
+28a34
+> #incnfile = au-DN-0.cn readcn
+33a40,43
+> #input = [ 1 -10 10 0.4 10 -10 10 ] fixatoms_by_position
+> #removefixedatoms
+> #input = [ 1 -10 10 -10 -0.4 -10 10 ] fixatoms_by_position
+> #removefixedatoms
+43a54,60
+> #plot_color_axis = 0  #0: use local energy (default)
+> #plot_color_windows = [ 2
+> #                       -6.725  -6.0 8 #color08 = blue
+> #                       -6.0     0   6 #color06 = gray80
+> #                      ]
+> #------------------------
+> #Use CSD to plot
+46c63
+< plot_color_windows = [ 1
+---
+> plot_color_windows = [ 3
+47a65,66
+>                        5    10  4  #color04 = cyan
+>                        10   20  6  #color06 = gray80
+51a71
+> #
+55,57d75
+< #-------------------------------------------------------------
+< #Molecular Dynamics setting (equilibration run, NVE)
+< timestep = 0.005 # (ps)
+61,65c80,82
+< MD++ {
+<  conj_fixboxvec = [ 0 0 1
+<                     1 0 1 
+<                     0 0 0 ]
+< }
+---
+> set C11 170000
+> set factor 0.7
+> set maxiter 100
+67,71c84
+< MD++ conj_fixbox = 1
+< MD++ conj_ftol = 2e-2 conj_itmax = 1000 conj_fevalmax = 2000
+< MD++ relax
+< MD++ writeall = 1 finalcnfile = "0K_perfect.cn" writecn
+< MD++ eval
+---
+> MD++ conj_ftol = 2e-10 conj_fixbox = 1 relax
+73,74d85
+< set H12_0 [ MD++_Get H_12 ]
+< set H13_0 [ MD++_Get H_13 ]
+76d86
+< set H23_0 [ MD++_Get H_23 ]
+79,88d88
+< 
+< set epsilon 0.0
+< set C11 170000
+< set factor 0.7
+< 
+< for { set itereps 0 } { $itereps <= 20 } { incr itereps 1 } {
+< 
+< puts "\n\n epsilon=$epsilon"
+< #exec sleep 1
+< 
+91c91
+< MD++ eval
+---
+> 
+92a93,96
+> #MD++ sleep
+> #MD++ incnfile = "0K_-2500MPa_1strelax.cn" readcn
+> #MD++ conj_fixbox = 1
+> #MD++ eval
+94d97
+< # adjust other strains in small steps
+130c133
+< MD++ conj_ftol = 2e-6 conj_fixbox = 1 relax
+---
+> MD++ conj_ftol = 2e-10 conj_fixbox = 1 relax
+132c135
+< MD++ finalcnfile = "NEBinit.cn" writecn
+---
+> MD++ finalcnfile = "pure_shear_stress.cn" writecn
+137c140
+< set fp [ open "strain.dat" a+ ]
+---
+> set fp [ open "strain.dat" w ]
+144c147
+< set fp [ open "stress.dat" a+ ]
+---
+> set fp [ open "stress.dat" w ]
+150,155c153,158
+< 
+< set epsilon [ expr $epsilon+0.01 ]
+< 
+< }
+< 
+< MD++ quit
+---
+> #exec mkdir NEBconfig_free
+> #exec cp NEBinit.cn NEBconfig_free/
+> #puts ${TSTRESS_xx_cur}
+> #MD++ quit 
+> #MD++ run
+> #MD++ quit

@@ -1,0 +1,48 @@
+# -*-shell-script-*-
+# compute misfit energy of FCC Al
+# compile MD++ by:
+#      make alglue build=R
+# run by:
+#      bin/alglue_gpp scripts/CSD-book/chap8/sect8.1/al-misfit.script
+#setnolog
+setoverwrite
+dirname = runs/al-misfit
+#-----------------------------------------------------------
+# Create Perfect Crystal Structure 
+crystalstructure = face-centered-cubic latticeconst = 4.0320825 # (A) for Al
+latticesize = [ 1 1  2  4
+               -1 1  0  4
+	        1 1 -1  4 ]
+makecrystal
+NNM = 100
+#------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+plot_color_windows = [ 2
+                       -10  -3.35 4 #color04 = cyan
+                       -3.35   10 8 #color08 = blue
+                      ]
+plot_atom_info = 3  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+#openwin alloccolors rotate saverot eval plot
+#sleep quit
+#------------------------------------------------------------
+#Compute misfit energy
+#
+input = [ 3              # surface normal is z direction
+          0 0.01  0.5    # x0,dx,x1  (in unit of [ 1 1  2] )
+          0 0.01  0      # y0,dy,y1  (in unit of [-1 1  0] )
+      -0.01 0.01  0.20   # z0,dz,z1  (in unit of [ 1 1 -1] )
+        ]
+eval calmisfit
+# this creates Emisfit.out file in runs/al-misfit
+# run plotEmisfit.m in Matlab to visualize the data
+quit
+    

@@ -1,0 +1,69 @@
+# -*-shell-script-*-
+# MD++ implementation of Ercolessi-Adams (Al)
+# create Frank-Read source by prismatic dislocation loop
+setnolog
+setoverwrite
+dirname = runs/al-fr
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = face-centered-cubic
+latticeconst = 4.032 #(A) for Al
+latticesize = [ -1 1  0  40    #(x)
+                 1 1  1  8   #(y)
+                 1 1 -2  15  ] #(z)            
+makecn finalcnfile = perf.cn writecn #refreshnnlist eval quit
+#-------------------------------------------------------------
+#Enlarge neighbor list size
+NNM = 100 # number of neighbors per atom (default: 60)
+#-------------------------------------------------------------
+#Create Dislocation loop by removing atoms
+input = [ 1  1 -2  5
+          1  1  1  4
+          1 -1  0  0.5
+         .01 -1.2 .7     #origin (x,y,z) of loop in angstrom
+          1              #1: deform neighboring atoms to heal the cut
+          0              #0: commit remove atoms, 1: plot only
+        ] 
+ #sometimes we need to shift the center of the box a little so that
+ #the number of atoms to be removed becomes correct (here it is 240)
+removerectbox finalcnfile = chunk.cn writecn #create dislocation loop
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+plot_color_windows = [ 2
+                       -3.32  -3.29 6 #color06 = gray80
+                       -3.29   10   8 #color08 = blue
+                       1              #plot fixed atoms
+                      ]
+#plot_limits = [ 1 -10 10 -0.05 10 -10 10 ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-10 conj_itmax = 1000 conj_fevalmax = 1000
+conj_fixbox = 0             #allow box to change shape
+conj_fixboxvec = [ 0 0 1    #fix three components of the 
+                   1 0 1    # H matrix to prevent rotation
+                   0 0 0 ]
+
+# (need to apply some stress to prevent cross slip)
+stress = [ 0 0 1   #apply stress sigma_xz (Escaig stress)
+           0 0 0
+           1 0 0 ]
+#
+stressmul = 0     #zero stress
+relax
+eval finalcnfile = alfr0.cn writeall = 1 writecn
+quit
+#-------------------------------------------------------------

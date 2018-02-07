@@ -1,0 +1,42 @@
+<font face="Arial, Helvetica, sans-serif">
+
+This directory contains MD++ input scripts
+that are used to create 3D crystal structures
+containing dislocations, which are used in Section 1.1
+of the book.
+
+<p>
+
+MD++ can be obtained from this
+<a href="http://micro.stanford.edu/~caiwei/Forum/2004-12-12-MD++/">
+link</a>.
+
+<p>
+
+Examples: <br>
+
+Run <font color="#880000">bin/md_gpp perf.in</font>, you will obtain
+<br>
+<a href="perf.pdf"><img src="perf.gif" border=0></a>
+
+<p>
+
+Run <font color="#880000">bin/md_gpp slip.in</font>, you will obtain
+<br>
+<a href="slip.pdf"><img src="slip.gif" border=0></a>
+
+<p>
+
+Run <font color="#880000">bin/md_gpp edge.in</font>, you will obtain
+<br>
+<a href="edge.pdf"><img src="edge.gif" border=0></a>
+
+<p>
+
+Run <font color="#880000">bin/md_gpp screw.in</font>, you will obtain
+<br>
+<a href="screw.pdf"><img src="screw.gif" border=0></a>
+
+<p>
+<a href="http://micro.stanford.edu/~caiwei/CSD-Book/">Book Home</a>
+</font>

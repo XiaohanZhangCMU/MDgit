@@ -1,0 +1,78 @@
+# -*-shell-script-*-
+# Create single screw dislocation in BCC Ta
+# under fixed boundary condition
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/ta-screw
+#------------------------------------------------------------
+#Read in potential file (Finnis-Sinclair potential for Ta)
+#
+potfile = ~/Codes/MD++/potentials/ta_pot readpot
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = body-centered-cubic latticeconst = 3.3058 #(A) for Ta
+latticesize = [  1      1    -2   10 
+                1     -1     0   16 
+                0.5   0.5   0.5  5 ]
+makecn finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#Create a single screw dislocation b = [111]
+#
+# remove all atoms beyond radius 32
+#         z y x0      y0     Rc   rem  szmin szmax
+input = [ 3 2 0.0334 -0.0208 32   0    0     0 ]  makecylinder
+# 3   : specifies the cylinder axis is along z axis
+# 2   : specifies the "local" y axis is the same as our y axis
+# (x0,y0) : specifies the center of the cylinder in "local" coordinate system
+#            in scaled coordinates
+# Rc  : speficies the cut-off radius
+# rem : 0 means atoms outside Rc will be removed, 1 means atoms to be fixed
+#
+# introduce the dislocation
+input = [ 1                         # activate makedislocation
+          3.3058                    # lattice constant (in Angstrom)
+          0 0 0.8660                # Burgers vector (in unit of a)
+          0 0 1                     # line direction vector
+          0 1 0                     # normal vector of cut plane
+          2.65 -1.28 0              # a point on dislocation (in Angstrom)
+          0.339                     # Poisson's ratio (for nonscrew dislocation)
+          0                         # 0 commit displacement, 1 store in memory
+        ]
+makedislocation eval
+#
+# fix    all atoms beyond radius 23.6
+#         z y x0      y0     Rc   fix  szmin  sxmax
+input = [ 3 2 0.0334 -0.0208 23.6 1    0      0]  makecylinder
+#
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+plot_color_windows = [ 2
+                       -10  -8.0 6 #color06 = gray80
+                       -8.0 -6.0 8 #color08 = blue
+                       1           #1: draw fixed atoms
+                      ]
+#plot_limits = [ 1 -10 10 -0.05 10 -10 10 ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+#win_width = 140 win_height = 140
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-10 conj_itmax = 1000 conj_fevalmax = 10000
+conj_fixbox = 1 
+relax
+eval finalcnfile = relaxed.cn writeall = 1 writecn
+sleep quit
+#-------------------------------------------------------------

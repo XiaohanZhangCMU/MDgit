@@ -326,10 +326,7 @@ F90OPT.wcr_mpi.R = -O -fno-second-underscore
 ###############
 #Sherlock
 ifeq ($(CUDA),yes)
-#cc.sherlock = nvcc -gencode arch=compute_52,code=sm_52
 cc.sherlock = nvcc -gencode arch=compute_61,code=sm_61
-#arch=compute_52,code=sm_52
-#arch=compute_35,code=sm_35
 OPT.sherlock.D=-g3
 OPT.sherlock.R=-O3
 else
@@ -340,19 +337,20 @@ endif
 
 LOPT.sherlock=-L/usr/X11R6/lib -lpthread
 XLIBS.sherlock=-lX11
-TCLLIBS.sherlock=-ltcl8.5
-TKLIBS.sherlock=-ltk8.5
+TCLLIBS.sherlock=-L/home/xzhang11/tcl/lib -ltcl8.5
+TKLIBS.sherlock=-L/home/xzhang11/tcl/lib -ltk8.5
 #PYINCLUDE.sherlock=-I/export/apps/python/2.7.8/include/python2.7/
 #PYLIBS.sherlock=-L/export/apps/python/2.7.8/lib/ -lpython2.7
 F77.sherlock = g77
 F90.sherlock = gfortran
 cc.sherlock = gcc
+CC.sherlock = g++
 #F77LIBS.sherlock_mpich=-lifcore
 #F90LIBS.sherlock_mpich=-lifcore
 #F77LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
 #F90LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
-F77LIBS.sherlock=-lg2c -lstdc++
-F90LIBS.sherlock=-lg2c -lstdc++ -lgfortran
+#F77LIBS.sherlock=-lg2c -lstdc++
+#F90LIBS.sherlock=-lg2c -lstdc++ -lgfortran
 
 ##############
 # SU-AHPCRC

@@ -14,8 +14,10 @@
 #include <cassert>
 #include "mdparallel.h"
 
-#define _USECUDA
+//#define _USECUDA
+#ifdef _USECUDA
 #include "linalg3_cu.h"
+#endif
 
 #define _MAX_NELEM_SHARE_NODE 10
 

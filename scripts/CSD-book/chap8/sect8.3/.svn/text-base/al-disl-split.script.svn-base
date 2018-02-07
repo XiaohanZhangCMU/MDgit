@@ -1,0 +1,105 @@
+# -*-shell-script-*-
+# compute misfit energy of FCC Al
+# compile MD++ by:
+#      make alglue build=R
+# run by:
+#      bin/alglue_gpp scripts/CSD-book/chap8/sect8.1/al-misfit.script
+setnolog
+setoverwrite
+dirname = runs/al-disl-split
+#-----------------------------------------------------------
+# Create Perfect Crystal Structure 
+crystalstructure = face-centered-cubic latticeconst = 4.0320825 # (A) for Al
+latticesize = [ 1  1  -2  6
+                1  1   1  12
+	        1 -1   0  2 ]
+makecrystal
+NNM = 100
+#------------------------------------------------------------
+#Create Dislocation Dipole, screw [1 -1 0]
+input = [  3  #z, dislocation line direction
+           2  #y, separation direction betwen two dislocations in the dipole
+           0 0 0.25          # Burgers vector, bx,by,bz in scaled coordinate
+           0 -0.2632  0.2368 #(x0, y0, y1)
+           0.305             # nu, Poisson's ratio
+           -10 10 -10 10     # number of images
+           1                 # tilt box
+        ]
+makedipole finalcnfile = dipole.cn writecn
+#------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+#----------------------------------
+#  Use local energy to visualize defects
+#plot_color_axis = 0
+#plot_color_windows = [ 2
+#                       -10  -3.29 4 #color04 = cyan
+#                       -3.29   10 8 #color08 = blue
+#                     ]
+#----------------------------------
+#  Use CSD to visualize defects
+plot_color_axis = 2
+# eval input = [ 0.1 5 40 ] GnuPlotHistogram
+plot_color_windows = [ 2
+                      1 3   4  #color04 = cyan
+                       3  20    6  #color06 = gray
+                     ]
+#----------------------------------
+plot_atom_info = 3  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#------------------------------------------------------------
+#Conjugate-Gradient relaxation
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 1000
+
+# first relax with box fixed
+conj_fixbox = 1   relax   eval finalcnfile = relaxed.cn writecn
+#incnfile = relaxed.cn readcn
+
+
+# then relax at zero stress
+conj_fixbox = 0
+
+    stress         = [ 0  1  0
+                       1  0  0
+                       0  0  0 ]
+
+    conj_fixboxvec = [ 0 0 1
+                       1 0 1
+                       0 0 0 ]
+
+stressmul = 0  relax eval finalcnfile = relaxed-0.cn writecn
+#incnfile = relaxed-0.cn readcn
+
+# increment stress in steps of 100 MPa
+stressmul =  100  relax eval finalcnfile = relaxed-01.cn writecn
+stressmul =  200  relax eval finalcnfile = relaxed-02.cn writecn
+stressmul =  300  relax eval finalcnfile = relaxed-03.cn writecn
+stressmul =  400  relax eval finalcnfile = relaxed-04.cn writecn
+stressmul =  500  relax eval finalcnfile = relaxed-05.cn writecn
+stressmul =  600  relax eval finalcnfile = relaxed-06.cn writecn
+stressmul =  700  relax eval finalcnfile = relaxed-07.cn writecn
+stressmul =  800  relax eval finalcnfile = relaxed-08.cn writecn
+stressmul =  900  relax eval finalcnfile = relaxed-09.cn writecn
+stressmul = 1000  relax eval finalcnfile = relaxed-10.cn writecn
+stressmul = 1100  relax eval finalcnfile = relaxed-11.cn writecn
+stressmul = 1200  relax eval finalcnfile = relaxed-12.cn writecn
+stressmul = 1300  relax eval finalcnfile = relaxed-13.cn writecn
+stressmul = 1400  relax eval finalcnfile = relaxed-14.cn writecn
+stressmul = 1500  relax eval finalcnfile = relaxed-15.cn writecn
+stressmul = 1600  relax eval finalcnfile = relaxed-16.cn writecn
+stressmul = 1700  relax eval finalcnfile = relaxed-17.cn writecn
+stressmul = 1800  relax eval finalcnfile = relaxed-18.cn writecn
+stressmul = 1900  relax eval finalcnfile = relaxed-19.cn writecn
+stressmul = 2000  relax eval finalcnfile = relaxed-20.cn writecn
+
+#-------------------------------------------------------------
+quit

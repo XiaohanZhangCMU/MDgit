@@ -1,0 +1,441 @@
+# -*-shell-script-*-
+# MD++ implementation of Ercolessi-Adams  (Al)
+# dislocation loop (full and partial/stacking fault)
+setnolog
+setoverwrite
+dirname = runs/CSD-book/tmp7
+#------------------------------------------------------------
+#Read in configuration file
+#incnfile = "structures/CSD-book/chap2/alstair2-dipole.cn" readcn
+incnfile = "alstair-dipole.cn" readcn
+#incnfile = "alstair-0.25.cn" readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = face-centered-cubic
+latticeconst = 4.032 #(A) for Ercolessi-Adams
+allocmultiple = 3
+#makecnspec = [ 1 0 0 20    #(x)
+#               0 1 0 20    #(y)
+#               0 0 1 20  ] #(z)
+makecnspec = [ -1 1 0 40    #(x)
+                1 1 1 8   #(y)
+                1 1 -2 15  ] #(z)  
+#makecn finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#shiftspec = [ 3 2 0.25 ] redefinepbc finalcnfile = shift.cn writecn
+shiftspec = [ 0 0 0.5 ] shiftpbc  writeall = 1 finalcnfile = shift.cn writecn
+#quit
+#-------------------------------------------------------------
+#Create Dislocation Dipole by using linear elastic solutions
+mkdipole = [ 3 2 #z(dislocation line), y(dipole direction)
+             0.0125 0 0 #(bx,by,bz)
+             0.001 -0.2708 0.2292 #(x0,y0,y1) #type (2)
+             0.305    -10 10 -10 10  1 ] #nu, number of images, shiftbox
+#makedipole finalcnfile = makedp.cn writecn #create dislocation dipole
+#-------------------------------------------------------------
+#Create Dislocation loop by removing atoms
+#removechunkspec = [ 1 1  1 4  
+#                     1 1 -2 5
+#                    -1 1  0 0.5
+#          0.004 0.016 0.028  1 0 ] #origin (x,y,z) assist, plotonly (0 or 1)
+#removechunk finalcnfile = chunk.cn writecn #create dislocation loop
+#quit
+#-------------------------------------------------------------
+#Plot Configuration
+#
+atomradius = 0.67 bondradius = 0.3 bondlength = 0 
+atomcolor = cyan highlightcolor = purple  bondcolor = red 
+fixatomcolor = yellow backgroundcolor = gray
+#atomcolor = lightgrey highlightcolor = purple  bondcolor = darkgrey
+#energycolorbar = [ 2 -3.48 -3.38 ]  highlightcolor = red
+#plot_restrict = 1
+#plot_ymin = 0.1 plot_ymax = 0.4
+#plot_ymin = 0.26 plot_ymax = 0.31
+#plot_xmin = -0.10 plot_xmax = 0.11
+#plot_zmin = -0.04 plot_zmax = -0.035
+#plot_zmin = -0.05 plot_zmax = 0.15
+highlightenergy = [ 1 -3.31 ] #Ercolessi-Adams (Al)
+hideatomenergy = [ 1 -3.33 0 ] #Ercolessi-Adams (Al)
+plot_select = 3 plot_highlight = [ 0 0 1 2 3 4 5 6 7 8 9 ]
+plotfreq = 10
+#rotateangles = [ 0 0 0 1.6 ]
+rotateangles = [ -60 -30 0 1.6 ]
+win_width = 600 win_height = 600
+openwin reversergb alloccolors rotate saverot plot #refreshnnlist eval plot
+#openwin alloccolors rotate saverot #refreshnnlist eval plot
+sleep quit
+#------------------------------------------------------------- 
+fortranpath = ~/Codes/ALGB3/F90ALGLUE 
+fortranexe = Relax.gps writeall = 1 
+#define relax fortranrelax
+#-------------------------------------------------------------
+#View by AtomEye (Li Ju)
+atomeyepath = ~/Codes/MD++/Tools/AtomEye atomeyeexe = A.alpha element1 = Al
+atomeyerepeat = [ 1  2 1 2 ]
+#define convert(a) incnfile = a.cn readcn finalcnfile = a.cfg writeatomeyecfg
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#stress = [ 0 0 0
+#           0 0 0
+#           0 0 0 ]
+
+#stress = [ 0 2000 0
+#           2000 0 0
+#           0 0 0 ]
+conj_fixbox = 0 conj_ftol = 1 conj_itmax = 1000
+#conj_fevalmax = 1 relax plot 
+conj_fevalmax = 2000 fortranrelax finalcnfile = alstair-0.25.cn writecn plot
+sleep quit
+#conj_fixbox = 0 #conj_monitor = 1 conj_summary = 1
+savecn = 1 intercnfile = inter.cn  openintercnfile
+#filecounter = 220 setfilecounter openintercnfile
+#
+#conj_fevalmax = 1 fortranrelax plot writeintercn
+#sleep quit
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+sleep quit
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+conj_fevalmax = 20 fortranrelax plot writeintercn
+
+convert(inter20001)
+convert(inter20002)
+convert(inter20003)
+convert(inter20004)
+convert(inter20005)
+convert(inter20006)
+convert(inter20007)
+convert(inter20008)
+convert(inter20009)
+convert(inter20010)
+convert(inter20011)
+convert(inter20012)
+convert(inter20013)
+convert(inter20014)
+convert(inter20015)
+convert(inter20016)
+convert(inter20017)
+convert(inter20018)
+convert(inter20019)
+convert(inter20020)
+convert(inter20021)
+convert(inter20022)
+convert(inter20023)
+convert(inter20024)
+convert(inter20025)
+convert(inter20026)
+convert(inter20027)
+convert(inter20028)
+convert(inter20029)
+convert(inter20030)
+convert(inter20031)
+convert(inter20032)
+convert(inter20033)
+convert(inter20034)
+convert(inter20035)
+convert(inter20036)
+convert(inter20037)
+convert(inter20038)
+convert(inter20039)
+convert(inter20040)
+convert(inter20041)
+convert(inter20042)
+convert(inter20043)
+convert(inter20044)
+convert(inter20045)
+convert(inter20046)
+convert(inter20047)
+convert(inter20048)
+convert(inter20049)
+convert(inter20050)
+convert(inter20051)
+convert(inter20052)
+convert(inter20053)
+convert(inter20054)
+convert(inter20055)
+convert(inter20056)
+convert(inter20057)
+convert(inter20058)
+convert(inter20059)
+convert(inter20060)
+convert(inter20061)
+convert(inter20062)
+convert(inter20063)
+convert(inter20064)
+convert(inter20065)
+convert(inter20066)
+convert(inter20067)
+convert(inter20068)
+convert(inter20069)
+convert(inter20070)
+convert(inter20071)
+convert(inter20072)
+convert(inter20073)
+convert(inter20074)
+convert(inter20075)
+convert(inter20076)
+convert(inter20077)
+convert(inter20078)
+convert(inter20079)
+convert(inter20080)
+convert(inter20081)
+convert(inter20082)
+convert(inter20083)
+convert(inter20084)
+convert(inter20085)
+convert(inter20086)
+convert(inter20087)
+convert(inter20088)
+convert(inter20089)
+convert(inter20090)
+convert(inter20091)
+convert(inter20092)
+convert(inter20093)
+convert(inter20094)
+convert(inter20095)
+convert(inter20096)
+convert(inter20097)
+convert(inter20098)
+convert(inter20099)
+convert(inter20100)
+convert(inter20101)
+convert(inter20102)
+convert(inter20103)
+convert(inter20104)
+convert(inter20105)
+convert(inter20106)
+convert(inter20107)
+convert(inter20108)
+convert(inter20109)
+convert(inter20110)
+convert(inter20111)
+convert(inter20112)
+convert(inter20113)
+convert(inter20114)
+convert(inter20115)
+convert(inter20116)
+convert(inter20117)
+convert(inter20118)
+convert(inter20119)
+convert(inter20120)
+convert(inter20121)
+convert(inter20122)
+convert(inter20123)
+convert(inter20124)
+convert(inter20125)
+convert(inter20126)
+convert(inter20127)
+convert(inter20128)
+convert(inter20129)
+convert(inter20130)
+convert(inter20131)
+convert(inter20132)
+convert(inter20133)
+convert(inter20134)
+convert(inter20135)
+convert(inter20136)
+convert(inter20137)
+convert(inter20138)
+convert(inter20139)
+convert(inter20140)
+convert(inter20141)
+convert(inter20142)
+convert(inter20143)
+convert(inter20144)
+convert(inter20145)
+convert(inter20146)
+convert(inter20147)
+convert(inter20148)
+convert(inter20149)
+convert(inter20150)
+convert(inter20151)
+convert(inter20152)
+convert(inter20153)
+convert(inter20154)
+convert(inter20155)
+convert(inter20156)
+convert(inter20157)
+convert(inter20158)
+convert(inter20159)
+convert(inter20160)
+convert(inter20161)
+convert(inter20162)
+convert(inter20163)
+convert(inter20164)
+convert(inter20165)
+convert(inter20166)
+convert(inter20167)
+convert(inter20168)
+convert(inter20169)
+convert(inter20170)
+convert(inter20171)
+convert(inter20172)
+sleep quit

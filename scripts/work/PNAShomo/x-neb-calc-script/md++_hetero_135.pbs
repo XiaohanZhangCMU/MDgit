@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -N w_disl
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+
+sleep 1
+
+mpirun -np $ncpu eam_mc2_mpich scripts/work/PNAShomo/x-neb-calc-script/disl_nuc_hetero.tcl 4 0.1350 112 1 
+
+
+wait
+#wipe $PBS_NODEFILE
+

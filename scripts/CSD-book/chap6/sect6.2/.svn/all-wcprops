@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/MD++/!svn/ver/1/trunk/scripts/CSD-book/chap6/sect6.2
+END
+si-core-vac-ha.script
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/MD++/!svn/ver/1/trunk/scripts/CSD-book/chap6/sect6.2/si-core-vac-ha.script
+END
+si-core-ha.script
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/MD++/!svn/ver/1/trunk/scripts/CSD-book/chap6/sect6.2/si-core-ha.script
+END
+si-vac-ha.script
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/MD++/!svn/ver/1/trunk/scripts/CSD-book/chap6/sect6.2/si-vac-ha.script
+END
+si-perf-ha.script
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/MD++/!svn/ver/1/trunk/scripts/CSD-book/chap6/sect6.2/si-perf-ha.script
+END

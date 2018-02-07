@@ -1,0 +1,75 @@
+# -*-shell-script-*-
+# MD code of BCC Mo edge dislocation
+#  create edge dislocation by relaxing an interface
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/mo-edge
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/mo_pot readpot
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+allocmultiple = 3 #anticipating enlargement of system size
+latticestructure = body-centered-cubic latticeconst = 3.1472 #(A) for Mo
+latticesize = [  0.5 0.5 0.5  30
+                -1 0 1   10
+                1 -2 1   8 ]
+makecn   finalcnfile = crystal1.cn writecn
+makecnspec = [  0.5 0.5 0.5  29
+                -1 0 1   10
+                1 -2 1   8 ]
+makecn   finalcnfile = crystal2.cn writecn
+# Put two crystals on top of each other along y-direction
+incnfile = crystal1.cn input = [ 2 0 ] splicecn
+input = [ 1 1 -0.01666666666667 ] shiftbox  #change Lx from 30 to 29.5
+finalcnfile = splice.cn writecn
+#-------------------------------------------------------------
+#Remove surface layer atoms
+input = [ 1      -0.6 0.6 0.41  0.6  -0.6 0.6 ] fixatoms_by_position
+input = [ 1      -0.6 0.6 -0.6 -0.44 -0.6 0.6 ] fixatoms_by_position
+#       [ enable  x0  x1   y0   y1    z0  z1  ]
+#
+# enable: set to 1 to activate
+# atoms whose scaled coordinate (x,y,z) satisfy
+#  x0 <= x <= x1, y0 <= y <= y1, z0 <= z <= z1  will be fixed
+removefixedatoms
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+#------------------------
+#Use local energy to plot
+#plot_color_axis = 0  #0: use local energy (default)
+#plot_color_windows = [ 2
+#                       -6.725  -6.0 8 #color08 = blue
+#                       -6.0     0   6 #color06 = gray80
+#                      ]
+#------------------------
+#Use CSD to plot
+plot_color_axis = 2  #2: use CSD (default 0: use local energy)
+NCS = 8 #number of neighboring atoms in CSD analysis (default: 12 - fcc)
+plot_color_windows = [ 2
+                       0.5  10  4  #color04 = cyan
+                       10   20  6  #color06 = gray80
+                     ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+conj_ftol = 1e-3 conj_itmax = 1000 conj_fevalmax = 500
+conj_fixbox = 1 
+relax finalcnfile = moedge-0.cn writecn
+sleep quit
+#-------------------------------------------------------------

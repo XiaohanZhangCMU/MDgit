@@ -1,0 +1,65 @@
+# -*-shell-script-*-
+# Free energy of Silicon Bulk Vacancy by Harmonic Approximation
+setnolog
+setoverwrite
+dirname = runs/si-vac-ha
+#-------------------------------------------------------------
+#Read in structure
+#
+#incnfile = ../../structures/CSD-book/chap6/si64-600K-vac-rlx.cn readcn
+#-------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+makecnspec = [ 1 0 0 2
+               0 1 0 2
+               0 0 1 2 ]
+makecn  finalcnfile = perf.cn writecn
+#------------------------------------------------------------
+#Remove an atom   
+input = [ 1 6 ] fixatoms_by_ID  #fix atom 6
+removefixedatoms
+#
+#------------------------------------------------------------
+#Run MD simulation to make sure subsequent relaxation finds global minimum
+T_OBJ = 600 totalsteps = 20000 timestep = 0.0001 # (ps)
+atommass = 28.0855 # (g/mol)
+srand48bytime DOUBLE_T = 1 initvelocity integrator_type = 1 #Velocity Verlet
+run 
+#------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.9 bondradius = 0.3 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red
+backgroundcolor = gray fixatomcolor = yellow
+color00 = "orange"  color01 = "purple" color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"
+#plot_color_windows = [ 2
+#                          -10 -4.44 0  #color00 = orange
+#                          -4.44 -3  1  #color01 = purple
+#                     ]
+plot_atom_info = 3
+plotfreq = 10
+#plot_limits = [ 1 -10 10 -0.4 0.0 -10 10 ]
+rotateangles = [ 0 -90 -90 1.5 ]
+win_width = 600 win_height = 600
+#win_width = 200 win_height = 150
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#------------------------------------------------------------
+#Conjugate-Gradient relaxation
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 1000
+conj_fixbox = 1 
+relax
+eval finalcnfile = relaxed.cn writecn
+#sleep quit
+#-------------------------------------------------------------
+#Computee Hessian matrix 
+input = 0       #compute all atoms
+timestep = 1e-4 #finite difference step size
+calHessian      #(output in runs/si-vac-ha/hessian.out)
+sleep quit
+#-------------------------------------------------------------

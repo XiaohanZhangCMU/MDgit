@@ -1,0 +1,40 @@
+# -*-shell-script-*-
+# MD code of Stillinger-Weber Si
+# (test the speed of SW potential)
+setnolog
+setoverwrite
+dirname = runs/sw-speed
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+latticesize = [ 1  0  0 5    #(x)
+                0  1  0 5   #(y)
+                0  0  1 5  ] #(z)
+makecrystal finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.9 #bondradius = 0.3 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red backgroundcolor = gray
+fixatomcolor = yellow
+color00 = "orange"  color01 = "purple" color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"
+plot_color_windows = [ 2
+                          -10 -4.5 0  #color00 = orange
+                          -4.5 10  1  #color01 = purple
+                     ]
+plot_atom_info = 1
+plotfreq = 10
+rotateangles = [ 0 0 0 1.2 ]
+#openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Test the speed of potential
+#
+totalsteps = 1000 multieval
+quit
+#-------------------------------------------------------------

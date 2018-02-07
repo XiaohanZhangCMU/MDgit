@@ -1,0 +1,59 @@
+# -*-shell-script-*-
+# MD code of BCC Mo edge dislocation
+#  equlibration run
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/mo-edge
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/mo_pot readpot
+#------------------------------------------------------------
+#Read in structure (created by mo-edge-make.script)
+#
+incnfile = moedge-0.cn readcn
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+#------------------------
+#Use local energy to plot
+#plot_color_axis = 0  #0: use local energy (default)
+#plot_color_windows = [ 2
+#                       -6.725  -6.0 8 #color08 = blue
+#                       -6.0     0   6 #color06 = gray80
+#                      ]
+#------------------------
+#Use CSD to plot
+plot_color_axis = 2  #2: use CSD (default 0: use local energy)
+NCS = 8 #number of neighboring atoms in CSD analysis (default: 12 - fcc)
+plot_color_windows = [ 2
+                       1.5  10  4  #color04 = cyan
+                       10   20  6  #color06 = gray80
+                     ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Molecular Dynamics setting (equilibration run, NVE)
+T_OBJ = 300 #(in K)
+timestep = 0.0005 # (ps)
+atommass = 95.94  #Mo (g/mol)
+# for equilibration
+#srand48bytime             #randomize random number generator
+DOUBLE_T = 1 initvelocity
+integrator_type = 1        #Velocity Verlet Algorithm
+totalsteps = 2000
+saveprop = 1 savepropfreq = 10 openpropfile 
+run
+writeall = 1 finalcnfile = moedge-1.cn writecn
+quit
+#------------------------------------------------------------

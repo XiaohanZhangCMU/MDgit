@@ -1,0 +1,55 @@
+#!/bin/bash
+#PBS -N PNAS_Step9cc
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+echo $PWD
+
+
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.005 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.015 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.025 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.035 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.045 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.055 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.065 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.075 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.085 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.135 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.145 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 100 0.155 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 200 0.160 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C9_get_more_accurate_stress.tcl 300 0.175 &
+
+wait
+#wipe $PBS_NODEFILE
+
