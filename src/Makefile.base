@@ -347,6 +347,7 @@ TKLIBS.sherlock=-ltk8.5
 F77.sherlock = g77
 F90.sherlock = gfortran
 cc.sherlock = gcc
+CC.sherlock = g++
 #F77LIBS.sherlock_mpich=-lifcore
 #F90LIBS.sherlock_mpich=-lifcore
 #F77LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore

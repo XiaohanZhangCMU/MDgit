@@ -62,9 +62,9 @@ int FEMFrame::exec(const char *name)
   bindcommand(name,"shift_fem_node_id",shift_fem_node_id((int) input[0]));
   bindcommand(name,"read2cn",read2cn());
   bindcommand(name,"read_contact",read_contact(contact_file));
-  bindcommand(name,"test_saxpy",test_saxpy());
 
 #ifdef _USECUDA
+  bindcommand(name,"test_saxpy",test_saxpy());
   bindcommand(name,"cuda_memcpy_all", cuda_memcpy_all());
 #endif
 

@@ -8,7 +8,7 @@
 #include <thrust/device_malloc.h>
 #include <thrust/device_free.h>
 
-#include<fem.h>
+#include "fem.h"
 
 void FEMFrame::cuda_memory_alloc() {
   assert(allocmultiple == 1);
