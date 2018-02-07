@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/MD++/!svn/ver/553/trunk/phasefield
+END
+phasefield_omp.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/541/trunk/phasefield/phasefield_omp.cpp
+END
+phasefield.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/MD++/!svn/ver/553/trunk/phasefield/phasefield.cpp
+END
+phasefield_cuda.cu
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/541/trunk/phasefield/phasefield_cuda.cu
+END
+phasefield_grain_Fan.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/MD++/!svn/ver/513/trunk/phasefield/phasefield_grain_Fan.cpp
+END
+phasefield_grain_Takaki.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MD++/!svn/ver/513/trunk/phasefield/phasefield_grain_Takaki.cpp
+END
+phasefield.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/MD++/!svn/ver/553/trunk/phasefield/phasefield.h
+END
+phasefield_mpi.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/541/trunk/phasefield/phasefield_mpi.cpp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/MD++/!svn/ver/553/trunk/phasefield/Makefile
+END
+phasefield_grain_Fan.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/MD++/!svn/ver/513/trunk/phasefield/phasefield_grain_Fan.h
+END
+phasefield_grain_Takaki.h
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/MD++/!svn/ver/513/trunk/phasefield/phasefield_grain_Takaki.h
+END
