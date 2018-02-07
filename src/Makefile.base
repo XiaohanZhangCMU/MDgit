@@ -1,0 +1,678 @@
+# -*-Makefile-*-  Last Modified : Fri May 15 14:18:26 2009
+# Creation date : Tue Sep 26 15:37:10 2000
+# Last Modified : Mon Oct 20 15:49:55 2003
+
+build=D
+SPEC=
+BIN=bin
+
+##############
+# MPICH (for MC-CC, login by ssh, do not use -X)
+CC.mpich = icc -w1
+OPT.mpich.D=-g3 -D_PARALLEL -I/opt/mpich/intel/include
+OPT.mpich.R=-O3 -D_PARALLEL  -I/opt/mpich/intel/include -xK -ipo
+LOPT.mpich=-L/usr/X11R6/lib -L/opt/mpich/intel/lib -lpthread -lmpich
+XLIBS.mpich=-lX11
+TCLLIBS.mpich=-ltcl8.4
+F77.mpich = ifort
+F90.mpich = ifort
+cc.mpich = $(CC.mpich)
+F77LIBS.mpich=-L/export/apps/intel/fc/9.1.043/lib -lifcore -lg2c
+F90LIBS.mpich=-L/export/apps/intel/fc/9.1.043/lib -lifcore -lg2c
+
+##############
+# MPICC
+CC.mpicc = icc -w1
+OPT.mpicc.D=-g3 -D_PARALLEL
+OPT.mpicc.R=-O3 -D_PARALLEL -xK -ipo
+LOPT.mpicc=-L/usr/X11R6/lib -lpthread -lmpi -llam
+XLIBS.mpicc=-lX11
+TCLLIBS.mpicc=-ltcl8.4
+F77.mpicc = ifort
+F90.mpicc = ifort
+cc.mpicc = $(CC.mpicc)
+F77LIBS.mpicc=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.mpicc=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# MPIgpp
+CC.mpigpp = g++ -Wall
+OPT.mpigpp.D=-g3 -D_PARALLEL
+OPT.mpigpp.R=-O9 -D_PARALLEL -funroll-loops -ffast-math -fomit-frame-pointer -malign-double -mcpu=pentiumpro -finline-functions -march=pentiumpro -fno-exceptions
+LOPT.mpigpp=-L/usr/X11R6/lib -lpthread -llammpi++ -lmpi -llam
+XLIBS.mpigpp=-lX11
+TCLLIBS.mpigpp=-ltcl8.4
+F77.mpigpp = ifort
+F90.mpigpp = ifort
+cc.mpigpp = $(CC.mpigpp)
+F77LIBS.mpigpp=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.mpigpp=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# Intel
+CC.intel=icc -w1
+OPT.intel.D=-g3 
+OPT.intel.R=-O3 -ipo
+LOPT.intel=-L/usr/X11R6/lib -lpthread
+XLIBS.intel=-lX11
+TCLLIBS.intel=-ltcl8.4
+TKLIBS.intel=-ltk8.4
+F77.intel = ifort
+F90.intel = ifort
+cc.intel = icc
+F77LIBS.intel=-L/opt/intel/fc/10.1.012/lib -lifcore 
+F90LIBS.intel=-L/opt/intel/fc/10.1.012/lib -lifcore
+
+##############
+# Mana
+CC.mana=icc -w1
+OPT.mana.D=-g3 
+OPT.mana.R=-O3 -ipo
+LOPT.mana=-L/usr/X11R6/lib -lpthread
+XLIBS.mana=-lX11
+TCLLIBS.mana=-ltcl8.4
+TKLIBS.mana=-ltk8.4
+F77.mana = ifort
+F90.mana = ifort
+cc.mana = icc
+F77LIBS.mana=-L/opt/intel/fc/10.1.012/lib -lifcore 
+F90LIBS.mana=-L/opt/intel/fc/10.1.012/lib -lifcore
+
+##############
+# Corn (stanford university cluster)
+CC.corn=g++
+OPT.corn.D=-Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
+OPT.corn.R=-Wno-unused-result -O3 -D_i686 -D_FORTIFY_SOURCE=1
+LOPT.corn=-L/usr/X11R6/lib -lpthread
+XLIBS.corn=-lX11
+TCLLIBS.corn=/usr/lib/libtcl8.4.so.0
+F77.corn = g77
+F90.corn = gfortran
+cc.corn = gcc
+F77LIBS.corn=-lg2c -lstdc++
+F90LIBS.corn=-lg2c -lstdc++ -lgfortran
+F90OPT.corn.D = -g -fno-second-underscore
+F90OPT.corn.R = -O -fno-second-underscore
+
+##############
+# Rye (stanford university cluster)
+CC.rye=nvcc --gpu-architecture=sm_20
+OPT.rye.D=-Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
+OPT.rye.R=-O3 -D_i686 
+LOPT.rye=-L/usr/X11R6/lib -lpthread
+XLIBS.rye=-lX11
+TCLLIBS.rye=-ltcl8.5
+F77.rye = g77
+F90.rye = gfortran
+cc.rye = gcc
+F77LIBS.rye=-lg2c -lstdc++
+F90LIBS.rye=-lg2c -lstdc++ -lgfortran
+F90OPT.rye.D = -g -fno-second-underscore
+F90OPT.rye.R = -O -fno-second-underscore
+
+##############
+# Barley (stanford university cluster, no X11)        
+CC.barley=g++
+OPT.barley.D=-Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1 -DNO_X11
+OPT.barley.R=-Wno-unused-result -O3 -D_i686 -D_FORTIFY_SOURCE=1 -DNO_X11
+LOPT.barley=-L/usr/X11R6/lib -lpthread
+XLIBS.barley=
+TCLLIBS.barley=/usr/lib/libtcl8.5.so.0
+F77.barley = g77
+F90.barley = gfortran
+cc.barley = gcc
+F77LIBS.barley=-lg2c -lstdc++
+F90LIBS.barley=-lg2c -lstdc++ -lgfortran
+F90OPT.barley.D = -g -fno-second-underscore
+F90OPT.barley.R = -O -fno-second-underscore
+
+##############
+# MC-CC
+CC.mc-cc=icc -w1
+OPT.mc-cc.D=-g3 
+OPT.mc-cc.R=-O3 -xK -ipo
+LOPT.mc-cc=-L/usr/X11R6/lib -lpthread
+XLIBS.mc-cc=-lX11
+TCLLIBS.mc-cc=-ltcl8.4
+TKLIBS.mc-cc=-ltk8.4
+FFTWINCLUDE.mc-cc=-I/home/caiwei/Codes/fftw-3.1.2/api
+FFTWLIBS.mc-cc=-L/home/caiwei/Codes/fftw-3.1.2/.libs -lfftw3
+F77.mc-cc = ifort
+F90.mc-cc = ifort
+cc.mc-cc = $(CC.mc-cc)
+F77LIBS.mc-cc=-L/export/apps/intel/fc/9.1.043/lib -lifcore 
+F90LIBS.mc-cc=-L/export/apps/intel/fc/9.1.043/lib -lifcore
+
+##############
+# MC2
+# In ~/.bash_profile, insert the following two lines at the end
+#   module load intel/intel-11
+#   module load mvapich/1.2rc1-intel-11-dell-gen2
+ifeq ($(CUDA),yes)
+  CC.mc2 = nvcc
+  OPT.mc2.D=-g3 
+  OPT.mc2.R=-O3 
+else
+  CC.mc2 = icc -w1 -Wno-unknown-pragmas
+  OPT.mc2.D=-g3 -shared-intel
+  OPT.mc2.R=-O3 -xSSE -ipo -shared-intel
+endif
+#OPT.mc2.R=-O3 -xO -ipo
+LOPT.mc2=-L/usr/X11R6/lib -lpthread
+XLIBS.mc2=-lX11
+TCLLIBS.mc2=-ltcl8.5
+TKLIBS.mc2=-ltk8.5
+FFTWINCLUDE.mc2=
+FFTWLIBS.mc2=
+PYINCLUDE.mc2=-I/export/apps/python/2.7.8/include/python2.7/
+PYLIBS.mc2=-L/export/apps/python/2.7.8/lib/ -lpython2.7
+F77.mc2 = ifort
+F90.mc2 = ifort
+cc.mc2 = $(CC.mc2)
+F77LIBS.mc2_mpich=-lifcore 
+F90LIBS.mc2_mpich=-lifcore
+#F77LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore 
+#F90LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
+F77LIBS.mc2=-L/share/apps/intel/lib/intel64 -lifcore 
+F90LIBS.mc2=-L/share/apps/intel/lib/intel64 -lifcore
+HDF5LIBS.mc2=-L"$(HOME)/usr/lib" -lhdf5
+GSLINCLUDE.mc2=-I$(HOME)/usr/include
+GSLLIBS.mc2=-L$(HOME)/usr/lib -lgsl -lgslcblas -lm
+
+##############
+# OpenMP for MC2
+# In ~/.bash_profile, insert the following two lines at the end
+#   module load intel/intel-11
+#   module load mvapich/1.2rc1-intel-11-dell-gen2
+CC.mc2_omp=icc -openmp -w1
+OPT.mc2_omp.D=-g3 -shared-intel
+OPT.mc2_omp.R=-O3 -xSSE -ipo -shared-intel
+#OPT.mc2_omp.R=-O3 -xO -ipo
+LOPT.mc2_omp=-L/usr/X11R6/lib -lpthread
+XLIBS.mc2_omp=-lX11
+TCLLIBS.mc2_omp=-ltcl8.5
+TKLIBS.mc2_omp=-ltk8.5
+FFTWINCLUDE.mc2_omp=
+FFTWLIBS.mc2_omp=
+F77.mc2_omp = ifort
+F90.mc2_omp = ifort
+cc.mc2_omp = $(CC.mc2)
+F77LIBS.mc2_omp=-lifcore 
+F90LIBS.mc2_omp=-lifcore
+F77LIBS.mc2_omp=-L/share/apps/intel/lib/intel64 -lifcore 
+F90LIBS.mc2_omp=-L/share/apps/intel/lib/intel64 -lifcore
+HDF5LIBS.mc2_omp=-L"$(HOME)/usr/lib" -lhdf5
+
+##############
+# MPICH for MC2
+# In ~/.bash_profile, insert the following two lines at the end
+#   module load intel/intel-11
+#   module load mvapich/1.2rc1-intel-11-dell-gen2
+NVCC=nvcc -gencode arch=compute_37,code=sm_37
+CC.mc2_mpich=mpicc
+OPT.mc2_mpich.D=-g3 -D_PARALLEL -shared-intel -I/export/apps/mvapich/intel-11-dell-gen2/include/
+OPT.mc2_mpich.R=-O3 -D_PARALLEL -shared-intel -I/export/apps/mvapich/intel-11-dell-gen2/include/ -ipo
+
+LOPT.mc2_mpich=-L/usr/X11R6/lib -lpthread 
+XLIBS.mc2_mpich=-lX11
+TCLLIBS.mc2_mpich=-ltcl8.5
+TKLIBS.mc2_mpich=-ltk8.5
+FFTWINCLUDE.mc2_mpich=
+FFTWLIBS.mc2_mpich=
+F77.mc2_mpich = ifort
+F90.mc2_mpich = ifort
+cc.mc2_mpich = $(CC.mc2_mpich)
+F77LIBS.mc2_mpich=-lifcore 
+F90LIBS.mc2_mpich=-lifcore
+#F77LIBS.mc2_mpich=-L/opt/intel/fce/10.1.022/lib -lifcore 
+#F90LIBS.mc2_mpich=-L/opt/intel/fce/10.1.022/lib -lifcore
+
+##############
+# MPI for MC2
+# particularly for phasefield code
+
+CC.mc2_mpi       = mpic++ -std=c++0x -DNO_X11 -D_STK_MPI -I./
+OPT.mc2_mpi.D    = -Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
+OPT.mc2_mpi.R    = -Wall -O3 -D_i686 -D_FORTIFY_SOURCE=1
+LOPT.mc2_mpi     = -L/usr/X11R6/lib -lpthread
+XLIBS.mc2_mpi    = -lX11
+TCLLIBS.mc2_mpi  = -ltcl8.5
+F77.mc2_mpi      = g77
+F90.mc2_mpi      = gfortran
+cc.mc2_mpi       = mpicc
+#F77LIBS.stk_mpi  = -lifcore
+#F90LIBS.stk_mpi  = -lifcore
+F77LIBS.mc2_mpi  = -lg2c -lstdc++
+F90LIBS.mc2_mpi  = -lg2c -lstdc++ -lgfortran
+F90OPT.mc2_mpi.D = -g -fno-second-underscore
+F90OPT.mc2_mpi.R = -O -fno-second-underscore
+
+##############
+# WCR
+CC.wcr=icc -w
+OPT.wcr.D=-g3
+OPT.wcr.R=-O3 -ipo
+LOPT.wcr=-L/usr/X11R6/lib64 -lpthread
+XLIBS.wcr=-lX11
+TCLLIBS.wcr=-ltcl8.5
+TKLIBS.wcr=-ltk8.5
+F77.wcr = ifort
+F90.wcr = ifort
+cc.wcr = $(CC.wcr)
+#F77LIBS.wcr=-L/export/apps/intel/fce/9.1.039/lib -lifcore -lg2c
+#F90LIBS.wcr=-L/export/apps/intel/fce/9.1.039/lib -lifcore -lg2c
+F77LIBS.wcr=-L/opt/intel/fce/10.1.011/lib -lifcore
+F90LIBS.wcr=-L/opt/intel/fce/10.1.011/lib -lifcore
+OCTAVEINC.wcr=-I/usr/include/octave-2.1.57 -I/usr/include/octave-2.1.57/octave
+OCTAVELIBS.wcr=-L/usr/lib64/octave-2.1.57/lib -loctave -loctinterp
+
+##############
+# MPICH for WCR
+CC.wcr_mpich = mpicc
+OPT.wcr_mpich.D=-g3 -D_PARALLEL -I/share/apps/mvapich/1.2RC1/intel-11-gen2/include 
+OPT.wcr_mpich.R=-O3 -D_PARALLEL -I/share/apps/mvapich/1.2RC1/intel-11-gen2/include -ipo
+LOPT.wcr_mpich= -lpthread
+#LOPT.wcr_mpich=-L/usr/mpi/intel/mvapich-1.2.0/lib -lpthread -lmpich
+XLIBS.wcr_mpich=-L/usr/X11R6/lib64 -lX11 
+TCLLIBS.wcr_mpich=-ltcl8.5
+TKLIBS.wcr_mpich=-ltk8.5
+F77.wcr_mpich = ifort
+F90.wcr_mpich = ifort
+cc.wcr_mpich = $(CC.wcr_mpich)
+F77LIBS.wcr_mpich=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.wcr_mpich=-L/export/apps/intel/fce/9.1.043/lib -lifcore -lg2c
+
+##############
+# OpenMP for WCR
+# particularly for phasefield code
+
+CC.wcr_omp=icc -openmp -w1
+OPT.wcr_omp.D=-g3 -shared-intel
+OPT.wcr_omp.R=-O3 -xSSE -ipo -shared-intel
+#OPT.wcr_omp.R=-O3 -xO -ipo
+LOPT.wcr_omp=-L/usr/X11R6/lib -lpthread
+XLIBS.wcr_omp=-lX11
+TCLLIBS.wcr_omp=-ltcl8.5
+TKLIBS.wcr_omp=-ltk8.5
+FFTWINCLUDE.wcr_omp=
+FFTWLIBS.wcr_omp=
+F77.wcr_omp = ifort
+F90.wcr_omp = ifort
+cc.wcr_omp = $(CC.mc2)
+F77LIBS.wcr_omp=-lifcore
+F90LIBS.wcr_omp=-lifcore
+F77LIBS.wcr_omp=-L/share/apps/intel/lib/intel64 -lifcore
+F90LIBS.wcr_omp=-L/share/apps/intel/lib/intel64 -lifcore
+HDF5LIBS.wcr_omp=-L"$(HOME)/usr/lib" -lhdf5
+
+##############
+# MPI for WCR
+# particularly for phasefield code
+
+CC.wcr_mpi       = mpic++ -std=c++0x -DNO_X11 -D_STK_MPI -I./
+OPT.wcr_mpi.D    = -Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
+OPT.wcr_mpi.R    = -Wall -O3 -D_i686 -D_FORTIFY_SOURCE=1
+LOPT.wcr_mpi     = -L/usr/X11R6/lib -lpthread
+XLIBS.wcr_mpi    = -lX11
+TCLLIBS.wcr_mpi  = -ltcl8.5
+F77.wcr_mpi      = g77
+F90.wcr_mpi      = gfortran
+cc.wcr_mpi       = mpicc
+F77LIBS.wcr_mpi  = -lg2c -lstdc++
+F90LIBS.wcr_mpi  = -lg2c -lstdc++ -lgfortran
+F90OPT.wcr_mpi.D = -g -fno-second-underscore
+F90OPT.wcr_mpi.R = -O -fno-second-underscore
+
+###############
+#Sherlock
+ifeq ($(CUDA),yes)
+#cc.sherlock = nvcc -gencode arch=compute_52,code=sm_52
+cc.sherlock = nvcc -gencode arch=compute_61,code=sm_61
+#arch=compute_52,code=sm_52
+#arch=compute_35,code=sm_35
+OPT.sherlock.D=-g3
+OPT.sherlock.R=-O3
+else
+CC.sherlock = g++
+OPT.sherlock.D=-Wall -g3
+OPT.sherlock.R=-Wall -O3
+endif
+
+LOPT.sherlock=-L/usr/X11R6/lib -lpthread
+XLIBS.sherlock=-lX11
+TCLLIBS.sherlock=-ltcl8.5
+TKLIBS.sherlock=-ltk8.5
+#PYINCLUDE.sherlock=-I/export/apps/python/2.7.8/include/python2.7/
+#PYLIBS.sherlock=-L/export/apps/python/2.7.8/lib/ -lpython2.7
+F77.sherlock = g77
+F90.sherlock = gfortran
+cc.sherlock = gcc
+#F77LIBS.sherlock_mpich=-lifcore
+#F90LIBS.sherlock_mpich=-lifcore
+#F77LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
+#F90LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
+F77LIBS.sherlock=-lg2c -lstdc++
+F90LIBS.sherlock=-lg2c -lstdc++ -lgfortran
+
+##############
+# SU-AHPCRC
+CC.su-ahpcrc=icc -w1
+OPT.su-ahpcrc.D=-g3
+OPT.su-ahpcrc.R=-O3 -ipo
+LOPT.su-ahpcrc=-L/usr/X11R6/lib64 -lpthread
+XLIBS.su-ahpcrc=-lX11
+TCLLIBS.su-ahpcrc=-ltcl8.4
+TKLIBS.su-ahpcrc=-ltk8.4
+F77.su-ahpcrc = ifort
+F90.su-ahpcrc = ifort
+cc.su-ahpcrc = $(CC.wcr)
+F77LIBS.su-ahpcrc=-L/opt/intel/fce/10.1.015/lib -lifcore
+F90LIBS.su-ahpcrc=-L/opt/intel/fce/10.1.015/lib -lifcore 
+OCTAVEINC.su-ahpcrc=-I/lustre/home/mpotts/octave/include/octave-3.0.3
+OCTAVELIBS.su-ahpcrc=-L/lustre/home/mpotts/octave/lib/octave-3.0.3 -loctave -loctinterp
+
+##############
+# MPICH for SU-AHPCRC
+CC.su-ahpcrc_mpich = mpicxx
+OPT.su-ahpcrc_mpich.D=-g3 -mtune core2 -unroll -D_PARALLEL -DMPICH_IGNORE_CXX_SEEK 
+OPT.su-ahpcrc_mpich.R=-O3 -mtune core2 -unroll -D_PARALLEL -DMPICH_IGNORE_CXX_SEEK -ipo
+#OPT.su-ahpcrc_mpich.D=-g3 -mtune core2 -unroll -D_PARALLEL -I/usr/mpi/intel/mvapich-0.9.9/include
+#OPT.su-ahpcrc_mpich.R=-O3 -mtune core2 -unroll -D_PARALLEL -I/usr/mpi/intel/mvapich-0.9.9/include -ipo
+LOPT.su-ahpcrc_mpich= -lpthread -lmpich
+XLIBS.su-ahpcrc_mpich=-L/usr/X11R6/lib64 -lX11
+TCLLIBS.su-ahpcrc_mpich=-ltcl8.4
+TKLIBS.su-ahpcrc_mpich=-ltk8.4
+F77.su-ahpcrc_mpich = ifort
+F90.su-ahpcrc_mpich = ifort
+cc.su-ahpcrc_mpich = $(CC.su-ahpcrc_mpich)
+#F77LIBS.su-ahpcrc_mpich= -lifcore -lg2c
+#F90LIBS.su-ahpcrc_mpich= -lifcore -lg2c
+F77LIBS.su-ahpcrc_mpich= -L/opt/intel/fce/10.1.015/lib -lifcore
+F90LIBS.su-ahpcrc_mpich= -L/opt/intel/fce/10.1.015/lib -lifcore
+
+##############
+# CRAY (Einstein)
+CC.cray=CC
+OPT.cray.D=-g -Dround=rint
+OPT.cray.R=-O3 -Dround=rint
+LOPT.cray=-L/usr/X11R6/lib64 -lpthread
+XLIBS.cray=-lX11
+TCLLIBS.cray=-L/site/tcl-tk-8.4.19/lib -dynamic -ltcl8.4
+TKLIBS.cray=-L/site/tcl-tk-8.4.19/lib -dynamic -ltk8.4
+F77.cray = ifort
+F90.cray = ifort
+cc.cray = $(CC.cray)
+F77LIBS.cray=-lifcore
+F90LIBS.cray=-lifcore 
+OCTAVEINC.cray=
+OCTAVELIBS.cray= -loctave -loctinterp
+
+##############
+# Biox
+CC.biox=icc -w1
+OPT.biox.D=-g3
+OPT.biox.R=-O3 -ipo
+LOPT.biox=-L/usr/X11R6/lib64 -lpthread
+XLIBS.biox=-lX11
+F77.biox = ifort
+F90.biox = ifort
+cc.biox = $(CC.biox)
+F77LIBS.biox=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.biox=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# GNU C/C++
+CC.gcc=gcc
+OPT.gcc.D=-Wall -g3 
+OPT.gcc.R=-Wall -O3 
+LOPT.gcc=-L/usr/X11R6/lib -lpthread
+XLIBS.gcc=-lX11
+TCLLIBS.gcc=-ltcl8.4
+F77.gcc = g77
+F90.gcc = g95
+cc.gcc = gcc
+F77LIBS.gcc=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.gcc=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# GNU C/C++
+CC.gpp=g++
+OPT.gpp.D=-Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
+OPT.gpp.R=-Wall -O3 -D_i686 -D_FORTIFY_SOURCE=1 
+LOPT.gpp=-L/usr/X11R6/lib -lpthread
+XLIBS.gpp=-lX11
+TCLLIBS.gpp=-ltcl8.5
+F77.gpp = g77
+F90.gpp = gfortran
+cc.gpp = gcc
+F77LIBS.gpp=-lg2c -lstdc++
+F90LIBS.gpp=-lg2c -lstdc++ -lgfortran
+F90OPT.gpp.D = -g -fno-second-underscore
+F90OPT.gpp.R = -O -fno-second-underscore
+
+##############
+# GNU C/C++ in cygwin
+CC.cygwin=g++
+OPT.cygwin.D=-Wall -g3 -D_i686 -D_NOLOCK -D_NODRAND48 -D_CYGWIN
+OPT.cygwin.R=-Wall -O3 -D_i686 -D_NOLOCK -D_NODRAND48 -D_CYGWIN
+LOPT.cygwin=-L/usr/X11R6/lib -lpthread
+XLIBS.cygwin=-lX11
+TCLLIBS.cygwin=-L/usr/local/lib -ltcl84
+TKLIBS.cygwin=-ltk8.4
+F77.cygwin = g95 -fsloppy-char
+F90.cygwin = g95
+cc.cygwin = gcc
+F77LIBS.cygwin=-L/usr/local/lib/gcc-lib/i686-pc-cygwin/4.0.3 -lf95
+F90LIBS.cygwin=-L/usr/local/lib/gcc-lib/i686-pc-cygwin/4.0.3 -lf95 
+OCTAVEINC.cygwin=-I/usr/include/octave-2.1.73
+OCTAVELIBS.cygwin=-L/usr/lib/octave-2.1.73 -loctave -loctinterp
+
+##############
+# GNU C/C++ in cygwin (requires gcc 4.3.2)
+CC.cygwin-gcc4=g++-4
+OPT.cygwin-gcc4.D=-Wall -g3 -D_i686 -D_NOLOCK -D_NODRAND48
+OPT.cygwin-gcc4.R=-Wall -O3 -D_i686 -D_NOLOCK -D_NODRAND48
+LOPT.cygwin-gcc4=-L/usr/X11R6/lib -lpthread
+XLIBS.cygwin-gcc4=-lX11
+TCLLIBS.cygwin-gcc4=-L/usr/local/lib -ltcl84
+TKLIBS.cygwin-gcc4=-ltk84
+F77.cygwin-gcc4 = gfortran
+F90.cygwin-gcc4 = gfortran
+cc.cygwin-gcc4 = gcc-4
+F77LIBS.cygwin-gcc4 = -lgfortran
+F90LIBS.cygwin-gcc4 = -L/usr/lib/gcc/i686-pc-cygwin/4.3.2 -lgfortran
+OCTAVEINC.cygwin-gcc4 =-I/usr/include/octave-2.1.73
+OCTAVELIBS.cygwin-gcc4 =-L/usr/lib/octave-2.1.73 -loctave -loctinterp
+
+##############
+# GNU C/C++ in windows (compile in cygwin, runable in win)
+CC.win=g++
+OPT.win.D=-Wall -g3 -D_i686 -D_windows -D_NOLOCK -D_NODRAND48 -DNOPREPROCESS -DNO_VSNPRINTF -DNO_XPM -DDEPTH=32 -D__GNU_LIBRARY__ -D_SEM_SEMUN_UNDEFINED -I/usr/include/GL
+OPT.win.R=-Wall -O3 -D_i686 -D_windows -D_NOLOCK -D_NODRAND48 -DNOPREPROCESS -DNO_VSNPRINTF -DNO_XPM -DDEPTH=32 -D__GNU_LIBRARY__ -D_SEM_SEMUN_UNDEFINED -I/usr/include/GL
+LOPT.win=-L/usr/X11R6/lib -lpthread
+XLIBS.win=-lglut32 -lglu32 -lopengl32
+TCLLIBS.win=-ltcl84
+F77.win = g77
+F90.win = g95
+cc.win = gcc
+F77LIBS.win=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.win=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# Mac OS X
+CC.mac=g++
+OPT.mac.D=-Wall -g3 -D_mac -I/usr/X11R6/include
+OPT.mac.R=-Wall -O3 -D_mac -I/usr/X11R6/include
+LOPT.mac=-L/usr/X11R6/lib -lpthread
+XLIBS.mac=-lX11
+TCLLIBS.mac=-ltcl8.5
+PYINCLUDE.mac=-I/System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7
+PYLIBS.mac=-lpython
+F77.mac = gfortran
+F90.mac = gfortran
+cc.mac = gcc
+F77LIBS.mac=-L/usr/local/lib -lgfortran
+F90LIBS.mac=-L/usr/local/lib -lgfortran
+
+##############
+# OpenMP for Mac OS X
+CC.mac_omp=$(HOME)/usr/local/bin/g++ -fopenmp
+OPT.mac_omp.D=-Wall -g3 -D_mac -I/usr/X11R6/include
+OPT.mac_omp.R=-Wall -O3 -D_mac -I/usr/X11R6/include
+LOPT.mac_omp=-L/usr/X11R6/lib -lpthread -lstdc++
+XLIBS.mac_omp=-lX11
+TCLLIBS.mac_omp=-ltcl8.5
+F77.mac_omp = $(HOME)/usr/local/bin/gfortran -fopenmp
+F90.mac_omp = $(HOME)/usr/local/bin/gfortran -fopenmp
+cc.mac_omp = $(HOME)/usr/local/bin/gcc -fopenmp
+F77LIBS.mac_omp=-L/usr/local/lib -lgfortran
+F90LIBS.mac_omp=-L/usr/local/lib -lgfortran
+
+##############
+# IBM C/C++
+CC.ibm=xlC
+OPT.ibm.D= -g 
+OPT.ibm.R= -O3 
+LOPT.ibm=-lpthread
+XLIBS.ibm=-lX11
+TCLLIBS.ibm=-ltcl8.4
+F77.ibm = xlf
+F90.ibm = xlf
+cc.ibm = $(CC.ibm)
+F77LIBS.ibm=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.ibm=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# GPS
+CC.gps=cxx -D__gps
+OPT.gps.D= -g3 -pthread
+OPT.gps.R= -O3 -pthread
+GEN.gps+=-DNOPREPROCESS
+LOPT.gps= -lrt
+XLIBS.gps=-lX11
+TCLLIBS.gps=-ltcl8.4
+F77.gps = ifort
+F90.gps = ifort
+cc.gps = $(CC.gps)
+F77LIBS.gps=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.gps=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# Xolas SunOS
+CC.SunOS=CC
+GEN.SunOS=
+OPT.SunOS.D=-xCC -g
+OPT.SunOS.R=-xCC -xO5 -xdepend -xarch=v8plus -xchip=ultra -fsimple -dalign
+XLIBS.SunOS=-lX11
+TCLLIBS.SunOS=-ltcl8.4
+F77.SunOS = g77
+F90.SunOS = g95
+cc.SunOS = $(CC.SunOS)
+F77LIBS.SunOS=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.SunOS=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# SGI IRIX
+CC.IP22=CC
+OPT.IP22.D=-Xcpluscomm -g
+OPT.IP22.R=-Xcpluscomm -mips2 -O3 -kpicopt -non_shared 
+XLIBS.IP22=-lX11
+TCLLIBS.IP22=-ltcl8.4
+F77.IP22 = g77
+F90.IP22 = g95
+cc.IP22 = $(CC.IP22)
+F77LIBS.IP22=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.IP22=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# x86 Linux
+CC.i686=g++ -D_i686
+OPT.i686.D=$(OPT.gcc.D)
+OPT.i686.R=$(OPT.gcc.R)
+LOPT.i686=-L/usr/X11R6/lib -lpthread
+CC.i586=$(CC.i686)
+OPT.i586.D=$(OPT.i686.D)
+OPT.i586.R=$(OPT.i686.R)
+LOPT.i586=$(LOPT.i686)
+XLIBS.i586=-lX11
+TCLLIBS.i586=-ltcl8.4
+F77.i586 = g77
+F90.i586 = g95
+cc.i586 = $(CC.i586)
+F77LIBS.i586=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.i586=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# alpha Linux
+CC.alpha=gcc
+OPT.alpha.R=$(OPT.gcc.R)
+OPT.alpha.D=$(OPT.gcc.D)
+LOPT.alpha=-L/usr/X11R6/lib -lpthread
+XLIBS.alpha=-lX11
+TCLLIBS.alpha=-ltcl8.4
+F77.alpha = g77
+F90.alpha = g95
+cc.alpha = $(CC.alpha)
+F77LIBS.alpha=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.alpha=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+# SGI IRIX64
+CC.IP27=CC 
+#CC.IP27=gcc -fhuge-objects
+FGEN.IP27=-n32
+OPT.IP27.R=-Wall -O3
+OPT.IP27.D=-D__BIG_ENDIAN
+LOPT.IP27=-IPA -lpthread
+XLIBS.IP27=-lX11
+TCLLIBS.IP27=-ltcl8.4
+F77.IP27 = g77
+F90.IP27 = g95
+cc.IP27 = $(CC.IP27)
+F77LIBS.IP27=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+F90LIBS.IP27=-L/opt/intel/fc/9.0/lib -lifcore -lg2c
+
+##############
+#OPT.D=-D_DEBUG
+OPT.D=
+OPT.R=
+
+GEN=$(OPT.$(SYS).$(build)) $(OPT.$(build)) $(GEN.$(SYS))
+FGEN=$(FGEN.$(SYS))
+LINK=-lm $(GEN) $(LOPT.$(SYS))
+XLIBS=$(XLIBS.$(SYS))
+CC=$(CC.$(SYS)) $(SPEC)
+cc=cc
+
+##################################################
+# Default rules:
+
+define link
+$(CC) $^ $(LINK) -o ../$(BIN)/$@_$(SYS)
+endef
+
+#_$(SYS)
+.PHONY: all clean update
+
+all:
+
+%_t.o:%.cpp %.o
+	$(CC) -D_TEST -c $(OPT) $< -o $@
+%_t.o:%.c %.o
+	$(CC) -D_TEST -c $(OPT) $< -o $@
+
+%.to:%.cpp %.o
+	$(CC) -D_TEST -c $(GEN) $< -o $@
+%.o:%.cpp
+	$(CC) -c $(GEN) $(basename $@).cpp
+%.o:%.c
+	$(CC) -c $(GEN) $(basename $@).c
+%.o:%.cu
+	$(CC) -c $(GEN) $(basename $@).cu
+clean::
+	rm -f $(wildcard *.bak *.o *.to a.out *$(SYS))
+
+%.o:%.f
+	$(F77) -c $(FGEN) $^
+Makefile::
+	makedepend -Y *.cpp

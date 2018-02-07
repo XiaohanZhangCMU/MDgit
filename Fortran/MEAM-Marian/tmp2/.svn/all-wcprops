@@ -1,0 +1,131 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2
+END
+input.f
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/input.f
+END
+reader.f
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/reader.f
+END
+dscrfor.f
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/dscrfor.f
+END
+conf.dat
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/conf.dat
+END
+meamfunctions.f
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/meamfunctions.f
+END
+tqli.f
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/tqli.f
+END
+krameam.f
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/krameam.f
+END
+fort.45
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/fort.45
+END
+screen.f
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/screen.f
+END
+fort.47
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/fort.47
+END
+tred2.f
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/tred2.f
+END
+fort.48
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/fort.48
+END
+forces.f
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/forces.f
+END
+dscreen.f
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/dscreen.f
+END
+meamdata
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/meamdata
+END
+moldy.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/moldy.h
+END
+disper.f
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/disper.f
+END
+linvlc.f
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/linvlc.f
+END
+rhomeam.f
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/rhomeam.f
+END
+makefile
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/makefile
+END
+disperx
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Marian/tmp2/disperx
+END

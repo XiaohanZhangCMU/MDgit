@@ -1,0 +1,3 @@
+# display relevant entries in the prop.out file
+echo "% K: kinetic eng, U: potential eng, H: total eng,    T: temperature"
+cut -b 12- | cut -d ' ' -f 1,2,8,9

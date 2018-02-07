@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM
+END
+input.f
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/input.f
+END
+reader.f
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/reader.f
+END
+dscrfor.f
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/dscrfor.f
+END
+meamfunctions.f
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/meamfunctions.f
+END
+conf.dat
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/conf.dat
+END
+tqli.f
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/tqli.f
+END
+krameam.f
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/krameam.f
+END
+screen.f
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/screen.f
+END
+tred2.f
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/tred2.f
+END
+forces.f
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/forces.f
+END
+dscreen.f
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/dscreen.f
+END
+meamdata
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/meamdata
+END
+moldy.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/moldy.h
+END
+disper.f
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/disper.f
+END
+linvlc.f
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/linvlc.f
+END
+rhomeam.f
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/rhomeam.f
+END
+makefile
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/1/trunk/potentials/MEAM/makefile
+END

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+ipcs | cut -f 2 -d ' ' | xargs ipcrm shm
+ipcs | cut -f 2 -d ' ' | xargs ipcrm sem
+
+ipcs
+

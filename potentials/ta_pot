@@ -1,0 +1,39 @@
+# -*-shell-script-*-
+#Potential data file for Tantalum (Ta-73):
+d = 4.076980
+A = 2.591061
+beta = 0.0
+c = 4.20
+c0 = 1.2157373D0
+c1 = 0.027147D0
+c2 = -0.1217350D0
+#Parameters for Modified version
+B = 91.0
+alpha = 1.05
+b0 = 2.8629
+
+
+#--------------------------------------------------------
+#The following parameters can be calculated from the code.
+#--------------------------------------------------------
+#* Fitted parameters:
+#			      .					My results
+#Lattice constant 	a    (A)		3.3058		3.305800
+#Cohesive energy		Utot (eV)		8.10		8.1000
+#  (The following are in the units of 100 GPa)
+#Elastic constants:  
+#			C11 			2.660
+#			C12			1.612
+#			C44			0.824
+#			C'			0.524
+#			B			1.961
+#			Pc			0.394
+#
+#* Calculated parameters:
+#
+#Vacancy formation energy (unrelaxed)	Ev (eV)		3.13	3.1325	
+#			 (relaxed)				2.9043
+#					   2			
+#Surface energy				gama ( mJ/m )	2345
+#
+#

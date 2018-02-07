@@ -1,0 +1,14 @@
+ 12.				ZSMEAM
+ 3.31				ALFA
+ 2.39 	1.0	6.0	9.0	BETA(1-4)	
+ 3.8 	1.05			ESUBS, ASUBS
+ 1.0	1.0	4.64	-0.80    TS(1-4)
+ 1.0				ROZROS
+ 0				IBAR
+ 4.5				RCUTMEAM
+ 2.0	2.8			CMIN,CMAX
+ 0.460	0.460			REPULS, ATTRAC
+ 0.6				LEGEND
+ 0				NOSCREEN
+ 1                              NCRYS    (0: DIAMOND, 1: FCC, 2: BCC, 3: HCP)
+ 4.64                           EQUIDIST (equilibrim lattice constant)

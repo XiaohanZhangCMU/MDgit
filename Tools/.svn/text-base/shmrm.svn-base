@@ -1,0 +1,8 @@
+#!/usr/local/bin/tcsh
+
+foreach i (`ipcs | cut -c 6-13 | xargs echo`)
+ipcrm -s $i >& /dev/null
+ipcrm -m $i >& /dev/null
+end
+
+ipcs

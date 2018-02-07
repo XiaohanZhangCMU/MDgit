@@ -1,0 +1,32 @@
+MD++ simulation code package
+
+09/03/2006
+
+Wei Cai, Department of Mechanical Engineering, Stanford Unveristy
+
+For more information, see subdirectory MD++/Doc, e.g.
+
+        Doc/M01_MD++_v2.pdf
+
+To compile, type:
+        
+        gmake [fs/sw/clean/...] [SYS=gpp/cygwin/...] [build=D/R]
+
+To run examples, type:
+
+        bin/fs_gpp scripts/Examples/example01-mo.script
+
+        bin/sw_gpp scripts/Examples/example02-si.script
+
+        bin/eam_gpp scripts/Examples/example03-cu.script
+
+For more examples and tutorials, go to:
+
+ MD++ web site
+	http://micro.stanford.edu/~caiwei/Forum/2004-12-12-MD++/
+
+ Companion web site for book "Computer Simulations of Dislocations",
+  Vasily V. Bulatov and Wei Cai, Oxford Univeristy Press (2006)
+	http://micro.stanford.edu/~caiwei/CSD-Book/
+
+

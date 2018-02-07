@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+# by Chris Krenn (crkrenn@yahoo.com)
+# at Lawrence Berkeley National Laboratory, Berkeley, California
+# currently at Lawrence Livermore National Laboratory, Livermore California
+# 4/26/01
+
+# rename files using string replace
+
+if ($#ARGV < 2) {
+    print $#ARGV;
+    die "Usage:  $0 <oldstr> <newstr> [files]\n";
+}
+$old = shift(@ARGV);
+$new = shift(@ARGV);
+
+foreach $file (@ARGV)
+
+{
+    $_ = $file;
+    s/$old/$new/;
+    print "$file -> $_ \n";
+    rename $file, $_;
+}

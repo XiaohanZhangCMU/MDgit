@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/MD++/!svn/ver/412/trunk/Fortran/MEAM-Baskes/meam
+END
+dyn88a.f
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/MD++/!svn/ver/412/trunk/Fortran/MEAM-Baskes/meam/dyn88a.f
+END
+template.f
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/template.f
+END
+test4.p
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/test4.p
+END
+wrkspc.inc
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/wrkspc.inc
+END
+dyn.inc
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/dyn.inc
+END
+test4.r
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/test4.r
+END
+forces.f
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/MD++/!svn/ver/116/trunk/Fortran/MEAM-Baskes/meam/forces.f
+END
+meam.inc
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/meam.inc
+END
+main.f
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/main.f
+END
+dyn88.f
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/MD++/!svn/ver/1/trunk/Fortran/MEAM-Baskes/meam/dyn88.f
+END

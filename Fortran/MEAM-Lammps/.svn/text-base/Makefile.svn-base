@@ -1,0 +1,59 @@
+# *
+# *_________________________________________________________________________*
+# *      MEAM: MODEFIED EMBEDDED ATOM METHOD                                *
+# *      DESCRIPTION: SEE READ-ME                                           *
+# *      FILE NAME: Makefile                                                *
+# *      AUTHORS: Greg Wagner, Sandia National Laboratories                 * 
+# *      CONTACT: gjwagne@sandia.gov                                        *
+# *_________________________________________________________________________*/
+
+
+
+SHELL = /bin/sh
+
+
+# ------ FILES ------
+
+
+SRC = meam_data.F meam_setup_done.F meam_setup_global.F meam_setup_param.F meam_dens_init.F meam_dens_final.F meam_force.F
+
+FILES = $(SRC) Makefile 
+
+# ------ DEFINITIONS ------
+
+LIB = libmeam.a
+OBJ =   $(SRC:.F=.o)
+
+# ------ SETTINGS ------
+
+#F90 =           gfortran    
+#F90FLAGS =      -g -fno-second-underscore
+F90 =          ifort 			# Keonwook Kang Dec 25 2006
+#F90FLAGS =     -O3  -D_EROSE_FUNCTION=1
+F90FLAGS = -g 
+#F90FLAGS =      -O 
+ARCHIVE =	ar
+ARCHFLAG =	-rc
+#LINK =         	g++
+#LINKFLAGS =	-O
+USRLIB =
+SYSLIB =
+
+
+# ------ MAKE PROCEDURE ------
+
+lib: 	$(OBJ)
+	$(ARCHIVE) $(ARFLAGS) $(LIB) $(OBJ)
+
+# ------ COMPILE RULES ------
+
+%.o:%.F
+	$(F90) $(F90FLAGS) $(SPEC) -c $<
+
+# ------ CLEAN ------
+
+clean:
+	-rm -f *.o *.mod $(LIB)
+
+tar:
+	-tar -cvf ../MEAM.tar $(FILES)

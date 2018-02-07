@@ -1,0 +1,10 @@
+#!/bin/sh
+
+ipcs | cut -f2 -d' ' | xargs -I {} ipcrm -s {}
+ipcs | cut -f2 -d' ' | xargs -I {} ipcrm -m {}
+
+ipcs | cut -f3 -d' ' | xargs -I {} ipcrm -s {}
+ipcs | cut -f3 -d' ' | xargs -I {} ipcrm -m {}
+
+ipcs
+

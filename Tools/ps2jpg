@@ -1,0 +1,37 @@
+#!/bin/csh
+@ start = $argv[1]
+@ end = $argv[2]
+
+if ( $#argv > 2 ) then
+  @ step = $argv[3]
+else
+  @ step = 1
+endif 
+
+echo "start=$start end=$end step=$step"
+
+@ iter = $start
+while ($iter <= $end)
+if ($iter < 10) then 
+   echo convert Yshot000$iter.ps Ysnap000$iter.jpg
+   convert Yshot000$iter.ps Ysnap000$iter.jpg
+else
+   if ($iter < 100) then 
+     echo convert Yshot00$iter.ps Ysnap00$iter.jpg
+     convert Yshot00$iter.ps Ysnap00$iter.jpg
+   else
+       if ($iter < 1000) then 
+        echo convert Yshot0$iter.ps Ysnap0$iter.jpg
+        convert Yshot0$iter.ps Ysnap0$iter.jpg
+       else
+          if ($iter < 10000) then 
+           echo convert Yshot$iter.ps Ysnap$iter.jpg
+           convert Yshot$iter.ps Ysnap$iter.jpg
+          endif
+       endif
+   endif
+endif
+@ iter = $iter + $step
+end
+
+

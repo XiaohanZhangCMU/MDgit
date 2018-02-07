@@ -1,0 +1,125 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/MD++/!svn/ver/344/trunk/Tools/matlab/Voter_EAM
+END
+rhor_sm_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/rhor_sm_Voter.m
+END
+dphidr_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/dphidr_Voter.m
+END
+rhor_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/rhor_Voter.m
+END
+eamdata.Cu.Mishin
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/eamdata.Cu.Mishin
+END
+writeMDPPeam.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/writeMDPPeam.m
+END
+interatomic_dist.fcc
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/interatomic_dist.fcc
+END
+drhodr_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/drhodr_Voter.m
+END
+eamdata.Cu.Voter.Frho
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/eamdata.Cu.Voter.Frho
+END
+Tabulate_Voter_EAM.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/MD++/!svn/ver/324/trunk/Tools/matlab/Voter_EAM/Tabulate_Voter_EAM.m
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/README
+END
+Erose_fcn_mod.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/Erose_fcn_mod.m
+END
+Erose_fcn.m
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/Erose_fcn.m
+END
+cal_neighbor_dist_num.tcl
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/cal_neighbor_dist_num.tcl
+END
+laur.93-3901.pdf
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/laur.93-3901.pdf
+END
+read_mishin_eam.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/read_mishin_eam.m
+END
+eamdata.Cu.Voter.phir
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/eamdata.Cu.Voter.phir
+END
+eamdata.Cu.Voter.rhor
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/eamdata.Cu.Voter.rhor
+END
+writeLAMMPSeamfs.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/MD++/!svn/ver/344/trunk/Tools/matlab/Voter_EAM/writeLAMMPSeamfs.m
+END
+phir_sm_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/phir_sm_Voter.m
+END
+phir_Voter.m
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/MD++/!svn/ver/322/trunk/Tools/matlab/Voter_EAM/phir_Voter.m
+END

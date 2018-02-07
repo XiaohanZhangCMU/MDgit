@@ -1,0 +1,40 @@
+# -*-shell-script-*-
+#Potential data file for Iron (Fe-26):
+d = 3.699579D0
+A = 1.889846D0
+beta = 1.8D0
+c = 3.4D0
+c0 = 1.2110601D0
+c1 = -0.7510840D0
+c2 = 0.1380773D0
+#----Parameters for Modified version----
+B = 0.D0
+alpha =	3.9D0
+b0 = 0.D0
+
+
+
+
+#--------------------------------------------------------
+#The following parameters can be calculated from the code.
+#--------------------------------------------------------
+#* Fitted parameters:
+#			      .					
+#Lattice constant 	a    (A)		2.8665	
+#Cohesive energy		Utot (eV)		4.28
+#  (The following are in the units of 100 GPa)
+#Elastic constants:  
+#			C11 			1.519
+#			C12			0.862
+#			C44			0.762
+#			C'			0.3285
+#			B			1.081
+#			Pc			0.050
+#
+#* Calculated parameters:
+#
+#Vacancy formation energy (unrelaxed)	Ev (eV)		1.77	
+#
+#Surface energy				gama ( mJ/m )	1693
+
+

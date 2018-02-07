@@ -1,0 +1,22 @@
+*  dianastomdcask code reads the interatomic
+*  potential files from Diana Farkas
+*  and writes an EAMDATA file that MDCASK 
+*  can read
+
+*  To run dianastomdcask  you need a file
+*  called dianasfiles that has the names
+*  of the potential files from Diana Farkas
+*  The ORDER in the name of the files is 
+*  very IMPORTANT. It should be:
+*  phi11
+*  phi12
+*  phi22
+*  rho1
+*  rho2
+*  Frho1
+*  Frho2
+*  where 1 and 2 are the two components
+
+*  The EAMDATA file will have the cutoff 
+*  as the largest of the cutoffs of the two
+*  components. 

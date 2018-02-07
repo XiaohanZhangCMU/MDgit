@@ -1,0 +1,20 @@
+erose_form = 3
+rc = 4.5
+re(1,2) = 5.529
+delta(1,2) = 0.125
+lattce(1,2) = b1
+alpha(1,2) = 5.819
+attrac(1,1) = -0.182
+repuls(1,1) = 4.0
+attrac(2,2) = -0.36
+repuls(2,2) = 16.0
+attrac(1,2) = 0.0
+repuls(1,2) = 0.26
+Cmin(1,1,1) = 1.41
+Cmin(2,2,2) = 1.41
+Cmin(1,1,2) = 1.41
+Cmin(1,2,1) = 1.41
+Cmin(1,2,2) = 1.41
+Cmin(2,2,1) = 1.41
+augt1 = 1
+

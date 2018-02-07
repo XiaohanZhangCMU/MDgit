@@ -1,0 +1,8 @@
+To create Voter's EAM potential file, run Tabulate_Voter_EAM.m 
+
+Ref. 1.
+Arthur F. Voter, Los Alamos Unclassfied Technical Report # LA-UR 93-3901 (1993)
+Ref. 2.
+Y. Mishin et al, PRB (2001) vol. 63, 224106
+
+Ref. 1 is included as pdf file, "laur.93-3901.pdf" in the current directory.
