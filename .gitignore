@@ -5,3 +5,9 @@ bin
 bin1
 Source_sav_cgmd
 tests
+*.o
+*~
+*.cpp.*
+*.h.*
+runs
+fem_modload.sh
