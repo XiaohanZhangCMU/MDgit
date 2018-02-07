@@ -12,6 +12,7 @@
 
 void FEMFrame::cuda_memory_alloc() {
   assert(allocmultiple == 1);
+  assert(_NP > 0);
   cudaMalloc( &_d_map23,         2 * sizeof(int));
   cudaMalloc( &_d_SR,           _NP*sizeof(G_Vector3));
   cudaMalloc( &_d_SRref,        _NP*sizeof(G_Vector3));
@@ -19,7 +20,6 @@ void FEMFrame::cuda_memory_alloc() {
   cudaMalloc( &_d_F,            _NP*sizeof(G_Vector3));
   cudaMalloc( &_d_F_padding,    _NP*_MAX_NELEM_SHARE_NODE*sizeof(int));
   cudaMalloc( &_d_fixed,        _NP*sizeof(int));
-  cudaMalloc( &_d_EPOT,         _NP*sizeof(double));
   cudaMalloc( &_d_EPOT_IND,     _NP*sizeof(double));
   cudaMalloc( &_d_EPOT_RMV,     _NP*sizeof(double));
 
@@ -28,11 +28,17 @@ void FEMFrame::cuda_memory_alloc() {
 }
 
 void FEMFrame::cuda_memory_alloc_elements() {
+  assert(_NELE > 0);
+  cudaMalloc( &_d_EPOT,             _NELE*sizeof(double));
   cudaMalloc( &_d_elements,         _NELE*_NNODE_PER_ELEMENT*sizeof(int));
   cudaMalloc( &_d_inv_elements,     _NP*_MAX_NELEM_SHARE_NODE*sizeof(int));
 }
 
 void FEMFrame::cuda_memory_alloc_element_coeff() { 
+  assert(_NINT_PER_ELEMENT > 0);
+  assert(_NNODE_PER_ELEMENT > 0);
+  assert(_NDIM > 0);
+  assert(_NELE > 0);
   int size =  _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT  * _NELE;
   cudaMalloc( &_d_gauss_weight, _NINT_PER_ELEMENT*sizeof(double));
   cudaMalloc( &_d_dFdu,         size*sizeof(double));
@@ -72,6 +78,7 @@ void FEMFrame::create_inverse_connectivities_matrix() {
 void FEMFrame::cuda_memcpy_all() {
   assert(sizeof(G_Vector3) == sizeof(Vector3));
   assert(sizeof(G_Matrix33) == sizeof(Matrix33));
+  assert(_H[0][0]>0 && _H[1][1]>0 && _H[2][2]>0);
   int size1 = _NELE*_NNODE_PER_ELEMENT;
   int size2 = _NP*_MAX_NELEM_SHARE_NODE;
 
@@ -84,6 +91,7 @@ void FEMFrame::cuda_memcpy_all() {
   cudaMemcpy( _d_EPOT_IND, _EPOT_IND, _NP*sizeof(double),    cudaMemcpyHostToDevice);
   cudaMemcpy( _d_EPOT_RMV, _EPOT_RMV, _NP*sizeof(double),    cudaMemcpyHostToDevice);
 
+  cudaMemcpy( &_d_H,         &_H,         sizeof(G_Matrix33),cudaMemcpyHostToDevice); //???????????
   cudaMemcpy(_d_elements,    elements,    size1*sizeof(int),cudaMemcpyHostToDevice);
   cudaMemcpy(_d_inv_elements,inv_elements,size2*sizeof(int),cudaMemcpyHostToDevice);
 
@@ -111,6 +119,7 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
     double y_eigen_strain, double x_eigen_strain ) {
 
   int iele = blockDim.x * blockIdx.x + threadIdx.x; 
+  printf("I am here 1 : iele = %d\n", iele);
   if (iele < _NELE) { 
     int i,iele,j,jpt,iA, in, ip, iq, ind, p, q, r;
     G_Vector3 dsj, drj, elem_center;
@@ -125,6 +134,8 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
     /* energy of this element */
     hinv = _d_H.inv();
     Eele = 0;
+    printf("_d_H= %g, %g, %g\n", _d_H[0][0], _d_H[1][1], _d_H[2][2]);
+    //printf("hinv= %g, %g, %g\n", hinv[0][0], hinv[1][1], hinv[2][2]);
 
     /* center of the element */
     elem_center.clear();elem_center[0] = elem_center[1]=elem_center[2]= 0;
@@ -142,7 +153,9 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
 	    Fdef.clear(); Fdef[0][0] = Fdef[1][1] = Fdef[2][2] = 1.0;
 	    for(j=0;j<_NNODE_PER_ELEMENT;j++) {
 	      jpt=_d_elements[iele*_NNODE_PER_ELEMENT+j];
+//    printf("_d_Rref= %g, %g, %g\n", _d_Rref[jpt][0], _d_Rref[jpt][1], _d_Rref[jpt][2]);
 	      _d_SRref[jpt ] = hinv*_d_Rref[jpt];
+//    printf("_d_SRref= %g, %g, %g\n", _d_SRref[jpt][0], _d_SRref[jpt][1], _d_SRref[jpt][2]);
 	      dsj = _d_SR[jpt] - _d_SRref[jpt];
 	      dsj.subint();
 	      _d_H.multiply(dsj, drj);
@@ -152,6 +165,8 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
 	        for(iq=0;iq<_NDIM;iq++) {
 	          for(in=0;in<_NDIM;in++) {
 	   	        ind=(((iA*_NDIM+ip)*_NDIM+iq)*_NDIM+in)*_NNODE_PER_ELEMENT+j;
+//	                printf("_d_dFdu[%d] = %g",ind, _d_dFdu[ind]);
+//	                printf("drj[%d] = %g", in, drj[in]);
 		          if (_NDIM == 2)
            		  Fdef[ip][iq] += _d_dFdu[ind]*drj[_d_map23[in]]; 
               else //_NDIM == 3
@@ -161,8 +176,10 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
 
 	    eigF = getEigenF(elem_center, Fdef, y_eigen_zbound_max, y_eigen_zbound_min, x_eigen_zbound_max, x_eigen_zbound_min, y_eigen_strain,     x_eigen_strain );
 
+	    //printf("eigF = %g, %g, %g, %g, %g, %g", eigF[0][0], eigF[1][1], eigF[2][2], eigF[0][1], eigF[0][2], eigF[1][2]);
 	    invEigF = eigF.inv();
 	    Fe = Fdef*invEigF;     
+	    //printf("Fe = %g, %g, %g, %g, %g, %g", Fe[0][0], Fe[1][1], Fe[2][2], Fe[0][1], Fe[0][2], Fe[1][2]);
 	    E = Fe.tran()*Fe-I;
 	    B = Fe*Fe.tran();
 	    C = Fe.tran()*Fe;
@@ -232,6 +249,7 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
       /* Add contribution from Eint to Eele */
 	    Eele += _d_gauss_weight[iA]*Eint;
     }
+//    printf("Eele = %g, iele = %d\n", Eele, iele);
     _d_EPOT[iele] = Eele;
   }
 }
@@ -256,6 +274,7 @@ void FEMFrame::cuda_snap_fem_energy_force() {
   _EPOT=0; //put this back
 
   _VIRIAL.clear();
+  INFO_Printf("I am here, _EPOT = %g", _EPOT);
   kernel_snap_fem_energy_force<<<(_NELE/255),256>>>(_NDIM, _NELE, _NINT_PER_ELEMENT, _NNODE_PER_ELEMENT, _d_elements, _d_inv_elements, _d_map23, _d_fixed, _d_gauss_weight, _d_dFdu, _d_EPOT, _d_SR, _d_SRref, _d_Rref, _d_F, _d_F_padding, _d_H,
  y_eigen_zbound_max, y_eigen_zbound_min, 
  x_eigen_zbound_max, x_eigen_zbound_min,
@@ -264,7 +283,10 @@ void FEMFrame::cuda_snap_fem_energy_force() {
   kernel_assemble_back_force<<<(_NP/255),256>>>(_NP, _d_inv_elements, _d_F, _d_F_padding, _d_EPOT_IND, _d_EPOT_RMV, _d_VIRIAL_IND);
 
   thrust::device_ptr<double> t_EPOT = thrust::device_pointer_cast(_d_EPOT);
-  _EPOT = thrust::reduce(t_EPOT,t_EPOT+_NELE);
+  INFO_Printf("I am here 1, _EPOT = %g, _NELE = %d", _EPOT, _NELE);
+
+//  _EPOT = thrust::reduce(t_EPOT,t_EPOT+_NELE);
+  INFO_Printf("I am here 2, _EPOT = %g", _EPOT);
   
   cudaMemcpy( _F,       _d_F,         _NP*sizeof(G_Vector3), cudaMemcpyDeviceToHost);
 }
