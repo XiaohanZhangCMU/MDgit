@@ -1,0 +1,7 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+Doc
+cookies
+bin
+bin1
+Source_sav_cgmd
+tests
