@@ -16,7 +16,13 @@
 
 #define _USECUDA
 #ifdef _USECUDA
+#include <cuda_runtime.h>
 #include "linalg3_cu.h"
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code,char *file,int line,bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "GPUassert: %s %s %dn",cudaGetErrorString(code),file,line);
+    if (abort) { getchar(); exit(code); } } } 
 #endif
 
 #define _MAX_NELEM_SHARE_NODE 10
@@ -44,8 +50,10 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     int *_d_colorids;
     class G_Matrix33 *_d_VIRIAL_IND;
 
+    double * _d_H_element;
     double *_d_gauss_weight; 
     double *_d_dFdu;        
+    double *_h_EPOT; //???????????
     double *_d_EPOT;
     double *_d_EPOT_IND;
     double* _d_EPOT_RMV;
@@ -54,7 +62,6 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     G_Vector3 *_d_Rref;        
     G_Vector3 *_d_F;
     G_Vector3 *_d_F_padding; //for padding forces of elements
-    G_Matrix33 _d_H;
 
 #endif
 
