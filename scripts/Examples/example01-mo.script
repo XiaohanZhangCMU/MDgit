@@ -1,0 +1,63 @@
+# -*-shell-script-*-
+setnolog
+setoverwrite
+dirname = runs/mo-example
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/mo_pot readpot
+#------------------------------------------------------------
+#Read in structure
+#incnfile = ~/Codes/MD++/structures/junction/jnt8x19x8.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = body-centered-cubic latticeconst = 3.1472 #(A) for Mo
+latticesize = [  1   1  -2   8    #for screw [111]
+                 1  -1   0   19
+                 0.5   0.5   0.5   5 ]
+makecrystal finalcnfile = perf.cn writecn                
+#-------------------------------------------------------------
+#Create Dislocation Dipole
+#(screw) [111]
+mkdipole = [ 3 2 #z(dislocation line), y(dipole direction)
+             0 0 0.2 #(burgers vector relative to box)
+             0 -0.2632  0.2368 #Y=18 d=0.5  (b)
+             0.305 #\nu
+             -10 10 -10 10 1  #number of images
+             0 0 0 0 ]
+makedipole finalcnfile = makedp.cn writecn
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+plot_color_bar = [ 1 -6.8 -6.55 ]  highlightcolor = red
+plot_atom_info = 3
+plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#testpotentialspec = [ 10 1e-7 0 1 2 3 4 5 6 2701 2135 2130 ] testpotential
+#sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 1000
+conj_fixbox = 1 #conj_monitor = 1 conj_summary = 1
+relax finalcnfile = relaxed.cn writecn
+#sleep quit
+quit
+#-------------------------------------------------------------
+#Fortran Conjugate-Gradient relaxation
+#
+fortranpath = ~/Codes/MD++/F90FS potfile = Mo.pot fortranexe = Relax
+conj_fixbox = 1  #stress is meaningful only if allow box to relax
+#stress = [ 0 100 0
+#           100 0 0
+#           0 0 0 ] #(stress in MPa)
+conj_fevalmax = 1000 fortranrelax eval plot
+#sleep quit
+#quit

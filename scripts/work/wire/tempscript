@@ -1,0 +1,61 @@
+# prepare fem files by offsetting all node id with _NP = # of fibers atoms
+
+set raw_femcn [open  "../../../scripts/work/fem/membrane2d-8x5element.cn" r]
+set raw_coeff [open  "../../../scripts/work/fem/membrane2d-8x5element-CPE4-Q4.dat" r]
+set raw_elements [open  "../../../scripts/work/fem/membrane2d-8x5element.ele" r]
+set raw_bdy [open "../../../scripts/work/fem/membrane2d-8x5element.bdy" r]
+
+set cooked_cn [open  "fibers-fem.cn" w]
+set cooked_coeff [open  "fem-coeff.dat" w]
+set cooked_elements [open  "fem-elements.dat" w]
+set cooked_bdy [open "fem-bdy.dat" w]
+
+
+gets $raw_fibercn line
+set np1 [expr $line]
+gets $raw_fibercn line
+set np2 [expr $line]
+set np [expr $np1+$np2]
+puts $cooked_cn $np
+
+
+while { [gets $raw_fibercn line]>=0 } {
+    puts $cooked_cn $line
+}
+while { [gets $raw_femcn line]>=0 } {
+    puts $cooked_cn $line
+}
+close $raw_fibercn
+close $raw_femcn
+
+# cook coeff file: For now we think coeff file need not to be changed
+
+exec cp $raw_coeff $cooked_coeff
+
+# cook element file 
+
+gets $raw_elements  line
+puts $cooked_elements $line
+while { [gets $raw_elements line]>=0 } {
+    set nodes [split $line " "]
+    foreach node $nodes {
+	puts $cooked_cn [expr $node + $np1]
+    }
+}
+
+# cook bdy file
+gets $raw_bdy line
+puts $cooked_bdy $line
+while { [gets $raw_bdy line]>=0 } {
+    set fields [split $line " "]
+    set count 1
+    foreach field $fields {
+	if {$count == 1} {
+	   puts $cooked_cn [expr $field + $np1]
+        } else {
+	   puts $cooked_cn $field
+	}
+       incr $count 1
+    }
+}
+

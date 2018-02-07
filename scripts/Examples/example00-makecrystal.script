@@ -1,0 +1,55 @@
+# -*-shell-script-*-
+# MD code (without potential)
+# (only for structure manipulation and visualization)
+setnolog
+setoverwrite
+dirname = runs/tmp
+#
+#------------------------------------------------------------
+#Read in structure
+#
+#incnfile = ~/Codes/MD++/structures/si512.cn readcn
+#readcn
+#eval quit
+#
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+#crystalstructure = simple-cubic  latticeconst = 2.5
+#crystalstructure = body-centered-cubic latticeconst = 3
+#crystalstructure = face-centered-cubic latticeconst = 3.6
+#crystalstructure = diamond-cubic element0 = Si 
+#crystalstructure = zinc-blende element0 = Si element1 = C #Si(14),C(6)
+#crystalstructure = L1_2        element0 = Ni element1 = Al #Ni(28),Al(13)
+crystalstructure = L1_0        element0 = Ti element1 = Al #Ti(22),Al(13)
+atommass = [ 47.867 26.982 ] # (g/mol)
+#
+#latticeconst = 5.4309529817532409 #(A) for Si
+latticeconst = 4.032 #(A) for Al
+#latticeconst = 3.6030 #3.615 #(A) for Cu
+#
+latticesize = [ 1 0 0 4
+                0 1 0 4
+                0 0 1 4 ]
+#latticesize = [ 1 0 0 1
+#                0 1 0 1
+#                0 0 1 1 ]
+writeall = 1               
+makecrystal  writecn
+#------------------------------------------------------------
+#
+#Plot Configuration
+#
+#atomradius = [ 0.67 0.45 ] #SiC
+#bondradius = 0.3 bondlength = 2.8285 #for Si
+#atomcolor0 = orange atomcolor1 = brown
+#
+atomradius = [ 0.45 0.35 ] #Ni3Al
+atomcolor0 = cyan atomcolor1 = magenta
+highlightcolor = purple  bondcolor = red backgroundcolor = gray80
+#
+win_width = 500; win_height = 500
+#rotateangles = [ 0 -90 -90 1.5 ]
+plotfreq = 10  
+openwin reversergb alloccolors rotate saverot eval plot
+sleep quit

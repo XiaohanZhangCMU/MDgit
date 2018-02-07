@@ -1,0 +1,144 @@
+# -*-shell-script-*-
+# MD++ implementation of Ercolessi-Adams (Al)
+# Prismatic loop - Frank Read source activation
+setnolog
+setoverwrite
+dirname = runs/CSD-book/tmp8
+#------------------------------------------------------------
+#Read in configuration file
+#incnfile = ~/Codes/ALGB3/structures/alloop/looprelaxed2b-20x20x30.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = face-centered-cubic
+latticeconst = 4.032 #(A) for Al
+#allocmultiple = 2
+makecnspec = [ -1 1 0 15    #(x)
+                1 1 1 15   #(y)
+                1 1 -2 18  ] #(z)            
+makecn finalcnfile = perf.cn writecn #refreshnnlist eval quit
+#-------------------------------------------------------------
+#Create Dislocation loop by removing atoms
+removechunkspec = [ 1 1 -2 9
+                    1 1 1 5
+                    1 -1 0 0.5
+         .01 .04 .7  1  0 ] #origin (x,y,z) assist (0 or 1)
+removechunk finalcnfile = chunk.cn writecn #create dislocation loop
+#-------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.67 bondradius = 0.3 bondlength = 0 
+atomcolor = cyan highlightcolor = purple  bondcolor = red backgroundcolor = gray
+fixatomcolor = yellow
+#atomcolor = lightgrey highlightcolor = purple  bondcolor = darkgrey
+#energycolorbar = [ 2 -3.48 -3.38 ]  highlightcolor = red
+highlightenergy = [ 1 -3.29 ] #EAM(Cu E_perf=-3.49)
+hideatomenergy = [ 1 -3.32 0 ]
+plot_select = 3 plot_highlight = [ 0 0 1 2 3 4 5 6 7 8 9 ]
+plotfreq = 10
+rotateangles = [ 0 0 0 1.6 ]
+win_width = 500 win_height = 500
+openwin reversergb alloccolors rotate saverot #refreshnnlist eval plot
+#finalcnfile = eng.out writeENERGY
+#sleep quit
+#-------------------------------------------------------------
+fortranpath = ~/Codes/MOLLY3/F90ALGLUE potfile = Cu.pot
+fortranexe = Relax 
+##define relax fortranrelax
+writeall = 1  conj_fevalmax = 1 fortranrelax plot
+sleep quit
+#-------------------------------------------------------------
+#Conjugate-Gradient relaxation
+#
+#stress = [ 0 700. 494.9747  #700MPa
+#           700. 0 0
+#           494.9747 0 0 ]
+#stress = [ 0 1000. 707.21
+#           1000. 0 0
+#           707.21 0 0 ]
+#stress = [ 0 800. 565.685 
+#           800. 0 0
+#           565.685 0 0 ]
+#
+#stress = [ 0 800. 565.685 
+#           800. 0 1697.056
+#           565.685 1697.056 0 ]
+#
+#stress = [ 0 1600. 1131.37 
+#           1600. 0 3394.112
+#           1131.37 3394.112 0 ]           
+stress = [ 0 0 0
+           0 0 0
+           0 0 0 ]
+#stress = [ 0 -2000 0
+#           -2000 0 0
+#           0 0 0 ]
+conj_ftol = 1.e-1 conj_itmax = 1000 conj_fevalmax = 2000 #3000
+conj_fixbox = 0 #conj_monitor = 1 conj_summary = 1
+#relax finalcnfile = relaxed.cn writecn
+#writeall = 1  #conj_fevalmax = 1
+fortranrelax finalcnfile = relaxed.cn writecn
+#energyhistspec = [ -3.355 -3.2 50 ] GnuPlotEnergyHistogram 
+#
+#savecn = 1 intercnfile = inter.cn openintercnfile
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#conj_fevalmax = 50 fortranrelax eval plot writeintercn
+#fortranrelax finalcnfile = looprelaxed1000.cn writecn 
+eval plot
+sleep quit
+
+
+
+
+

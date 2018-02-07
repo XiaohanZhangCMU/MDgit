@@ -1,0 +1,55 @@
+#!/bin/bash
+#PBS -N PNAS_Step8b
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+
+T=400
+T1=500
+
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 100 095 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 17 89 100 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 16 79 105 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 13 69 110 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 11 61 115 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 10 54 120 $T &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 18 103 095 $T1 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 17 91 100 $T1 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 16 81 105 $T1 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 13 71 110 $T1 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 11 62 115 $T1 &
+sleep 1
+bin1/eam_mc2 scripts/work/PNAShomo/C8_obtain_kinetic_factor.tcl 10 54 120 $T1 &
+
+
+wait
+#wipe $PBS_NODEFILE
+

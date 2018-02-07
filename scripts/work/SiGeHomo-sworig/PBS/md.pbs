@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -N w_disl-9-4
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=999:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+#cd $PBS_O_WORKDIR
+cd /home/xzhang11/Planet/Libs/MD++UMB.svn3
+echo $PWD
+
+
+#status == 0: create state A. same as sscurve.tcl status =0
+#bin/sw_mc2 scripts/work/SiHomo-skin/neb-si.tcl 0 0 001 1
+
+sleep 1
+#bin/sw_mc2 scripts/work/SiHomo-skin/ss_si.tcl 22 800 0.1600
+#mpirun -np $ncpu sw_mc2_mpich scripts/work/SiHomo-skin/neb-si.tcl 4 0.0940 001 1 
+bin/sw_mc2 scripts/work/SiHomo-skin/ss_si.tcl 22 800 0.1700 0 1000
+sleep 1
+wait
+#wipe $PBS_NODEFILE
+

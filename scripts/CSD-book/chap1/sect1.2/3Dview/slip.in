@@ -1,0 +1,43 @@
+# -*-shell-script-*-
+# MD++ input script
+# Function: perfect simple cubic lattice with
+#           top and bottom halves slipping against each other
+#------------------------------------------------------------
+setnolog
+setoverwrite
+dirname = runs/CSD-book/slip
+shmsize = 20971520 shmallocate #20MB
+#-------------------------------------------------------------
+#Create Perfect Crystal
+# a hypothetical simple cubic crystal
+latticestructure = simple-cubic latticeconst = 3 #(in Angstrom)
+latticesize = [  1   0   0   8
+                 0   1   0   8
+                 0   0   1   6 ]
+makecrystal finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#Cut away boundary atoms
+input = [ 1  0.40 10   -10 10 -10 10 ] fixatoms_by_position
+input = [ 1  -10 -0.30 -10 10 -10 10 ] fixatoms_by_position
+input = [ 1  -10 10 0.45 10   -10 10 ] fixatoms_by_position
+input = [ 1  -10 10 -10 -0.35 -10 10 ] fixatoms_by_position
+removefixedatoms
+#-------------------------------------------------------------
+#Move the upper half of the crystal
+input = [ 1  -10 10   0.1 10  -10 10 ] fixatoms_by_position
+input = [ 0.125 0 0 ] movefixedatoms freeallatoms
+#------------------------------------------------------------
+#Plot Configuration
+#
+atomradius = 0.4 bondradius = 0.04 bondlength = 3.3
+atomcolor = orange highlightcolor = purple  bondcolor = gray60 
+fixatomcolor = gray80 #red #yellow
+win_width = 400 win_height = 400 backgroundcolor = gray70
+plot_atom_info = 1 plotfreq = 10 
+rotateangles = [ -2 -2 0 1.4 0.5e-3 ]
+win_width = 500 win_height = 500
+#win_width = 250 win_height = 250
+#openwin alloccolors rotate saverot refreshnnlist eval plot
+openwin reversergb alloccolors rotate saverot refreshnnlist eval plot
+sleep quit
+#-------------------------------------------------------------

@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -N Us-Ni-homo_Step9a
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+echo $PWD
+
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.095 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.100 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.105 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.110 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.115 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 300 0.120 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.095 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.100 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.105 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.110 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.115 &
+sleep 1
+bin1/eam_mc2_mpich scripts/work//Us-Ni-homo//C9_get_more_accurate_stress.tcl 200 0.120 &
+
+wait
+#wipe $PBS_NODEFILE
+

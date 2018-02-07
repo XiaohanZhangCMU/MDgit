@@ -1,0 +1,128 @@
+# -*-shell-script-*-
+# MD code of BCC Mo. edge dislocation
+#  find dislocation core position from MD snapshots
+#------------------------------------------------------------
+#setnolog
+setoverwrite
+dirname = runs/mo-edge-md-nh
+#--------------------------------------------
+#Read in potential file
+#
+potfile = ~/Codes/MD++/potentials/mo_pot readpot
+#------------------------------------------------------------
+#Read in structure (created by mo-edge-md-nh.script)
+#
+incnfile = inter0001.cn readcn
+#------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+#------------------------
+#Use local energy to plot
+#plot_color_axis = 0  #0: use local energy (default)
+#plot_color_windows = [ 2
+#                       -6.725  -6.0 8 #color08 = blue
+#                       -6.0     0   6 #color06 = gray80
+#                      ]
+#------------------------
+#Use CSD to plot
+plot_color_axis = 2  #2: use CSD (default 0: use local energy)
+NCS = 8 #number of neighboring atoms in CSD analysis (default: 12 - fcc)
+plot_color_windows = [ 2
+                       1.5  10  4  #color04 = cyan
+                       10   20  6  #color06 = gray80
+                     ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+#openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#-------------------------------------------------------------
+#Find dislocation core atoms center of mass
+#
+input = [ 1.5 10 ]   # CSD range for dislocation core atoms
+
+incnfile = inter0001.cn readcn eval findcore
+incnfile = inter0002.cn readcn eval findcore
+incnfile = inter0003.cn readcn eval findcore
+incnfile = inter0004.cn readcn eval findcore
+incnfile = inter0005.cn readcn eval findcore
+incnfile = inter0006.cn readcn eval findcore
+incnfile = inter0007.cn readcn eval findcore
+incnfile = inter0008.cn readcn eval findcore
+incnfile = inter0009.cn readcn eval findcore
+incnfile = inter0010.cn readcn eval findcore
+
+incnfile = inter0011.cn readcn eval findcore
+incnfile = inter0012.cn readcn eval findcore
+incnfile = inter0013.cn readcn eval findcore
+incnfile = inter0014.cn readcn eval findcore
+incnfile = inter0015.cn readcn eval findcore
+incnfile = inter0016.cn readcn eval findcore
+incnfile = inter0017.cn readcn eval findcore
+incnfile = inter0018.cn readcn eval findcore
+incnfile = inter0019.cn readcn eval findcore
+incnfile = inter0020.cn readcn eval findcore
+
+incnfile = inter0021.cn readcn eval findcore
+incnfile = inter0022.cn readcn eval findcore
+incnfile = inter0023.cn readcn eval findcore
+incnfile = inter0024.cn readcn eval findcore
+incnfile = inter0025.cn readcn eval findcore
+incnfile = inter0026.cn readcn eval findcore
+incnfile = inter0027.cn readcn eval findcore
+incnfile = inter0028.cn readcn eval findcore
+incnfile = inter0029.cn readcn eval findcore
+incnfile = inter0030.cn readcn eval findcore
+
+incnfile = inter0031.cn readcn eval findcore
+incnfile = inter0032.cn readcn eval findcore
+incnfile = inter0033.cn readcn eval findcore
+incnfile = inter0034.cn readcn eval findcore
+incnfile = inter0035.cn readcn eval findcore
+incnfile = inter0036.cn readcn eval findcore
+incnfile = inter0037.cn readcn eval findcore
+incnfile = inter0038.cn readcn eval findcore
+incnfile = inter0039.cn readcn eval findcore
+incnfile = inter0040.cn readcn eval findcore
+
+incnfile = inter0041.cn readcn eval findcore
+incnfile = inter0042.cn readcn eval findcore
+incnfile = inter0043.cn readcn eval findcore
+incnfile = inter0044.cn readcn eval findcore
+incnfile = inter0045.cn readcn eval findcore
+incnfile = inter0046.cn readcn eval findcore
+incnfile = inter0047.cn readcn eval findcore
+incnfile = inter0048.cn readcn eval findcore
+incnfile = inter0049.cn readcn eval findcore
+incnfile = inter0050.cn readcn eval findcore
+
+incnfile = inter0051.cn readcn eval findcore
+incnfile = inter0052.cn readcn eval findcore
+incnfile = inter0053.cn readcn eval findcore
+incnfile = inter0054.cn readcn eval findcore
+incnfile = inter0055.cn readcn eval findcore
+incnfile = inter0056.cn readcn eval findcore
+incnfile = inter0057.cn readcn eval findcore
+incnfile = inter0058.cn readcn eval findcore
+incnfile = inter0059.cn readcn eval findcore
+incnfile = inter0060.cn readcn eval findcore
+
+incnfile = inter0061.cn readcn eval findcore
+incnfile = inter0062.cn readcn eval findcore
+incnfile = inter0063.cn readcn eval findcore
+incnfile = inter0064.cn readcn eval findcore
+incnfile = inter0065.cn readcn eval findcore
+incnfile = inter0066.cn readcn eval findcore
+incnfile = inter0067.cn readcn eval findcore
+incnfile = inter0068.cn readcn eval findcore
+incnfile = inter0069.cn readcn eval findcore
+incnfile = inter0070.cn readcn eval findcore
+
+quit
+#------------------------------------------------------------------

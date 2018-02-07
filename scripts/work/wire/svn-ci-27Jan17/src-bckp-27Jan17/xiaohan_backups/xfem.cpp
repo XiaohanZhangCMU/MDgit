@@ -1,0 +1,173 @@
+#include "xfem.h"
+
+/*
+  This read2cn() is specific for fiber+FEMsubstrate
+  It first dumps the already existed configuration, and combine the dumped file with the current "incnfile"  
+ */
+int XFEMFrame::read2cn()
+{
+  assert(_NP>0); 
+  int ival1, ival2; 
+  double dvalx, dvaly, dvalz;
+  n_existed_atoms = _NP;
+
+  strcpy(finalcnfile,  "config1.cn");
+  writefinalcnfile(0,false);
+
+  FILE *config1fp  = fopen(finalcnfile,"r");
+  FILE *config2fp  = fopen(incnfile,"r");   
+  FILE *config12fp = fopen("config12.cn","w");
+
+  assert (config1fp!=NULL); 
+  assert (config2fp!=NULL);
+  assert (config12fp!=NULL);
+
+  fscanf(config1fp, "%d", &ival1);
+  fscanf(config2fp, "%d", &ival2);  
+
+  nfemNodes = ival2;
+  fprintf(config12fp, "%d\n" ,ival1+ival2);
+
+  for (int nd = 0;nd<ival1;nd++) {
+    fscanf(config1fp, "%lf %lf %lf" , &dvalx, &dvaly, &dvalz);
+    fprintf(config12fp, "%23.18E %23.18E %23.18E\n" ,dvalx, dvaly, dvalz);
+  }
+  for (int nd = 0;nd<ival2;nd++) {
+    fscanf(config2fp, "%lf %lf %lf" , &dvalx, &dvaly, &dvalz);
+    fprintf(config12fp, "%23.18E %23.18E %23.18E\n" ,dvalx, dvaly, dvalz);
+  }
+  //box information is the same as the existed one
+  for (int nd = 0;nd<3;nd++) {
+    fscanf(config1fp, "%lf %lf %lf" , &dvalx, &dvaly, &dvalz);
+    fprintf(config12fp, "%23.18E %23.18E %23.18E\n" ,dvalx, dvaly, dvalz);
+  }
+
+  fclose(config1fp);
+  fclose(config2fp);
+  fclose(config12fp);
+
+  //perform a regular readcn on the combined cn file
+  strcpy(incnfile,  "config12.cn");
+  return (FEMFrame::readcn());
+}
+
+void XFEMFrame::initparser()
+{
+  FEMFrame::initparser();
+  bindvar("fem_bdy_nodes_file",fem_bdy_nodes_file,STRING);
+  bindvar("n_fem_nodes",&nfemNodes,INT);
+}
+
+int XFEMFrame::exec(const char *name)
+{
+  if(FEMFrame::exec(name)==0) return 0;
+  bindcommand(name,"read_bdy_nodes",read_bdy_nodes(fem_bdy_nodes_file));
+  bindcommand(name,"shift_fem_node_id",shift_fem_node_id((int) input[0]));
+  bindcommand(name,"read2cn",read2cn());
+  
+  return -1;
+
+  // if (FEMFrame::exec(name)) {
+  //   bindcommand(name,"read_bdy_nodes",read_bdy_nodes(fem_bdy_nodes_file));
+  //   return -1;
+  // }
+  // return 0;
+}
+
+int XFEMFrame::read_bdy_nodes(const char* fname)
+{
+  FILE *bdyfile = fopen(fname,"r"); assert(bdyfile != NULL); 
+  
+  fscanf(bdyfile,"%d %d", &n_bdy_nodes,&n_bdy_tags); 
+  assert(n_bdy_nodes > 0 && n_bdy_tags > 0); 
+  
+  Realloc(bNds,int,n_bdy_nodes);
+  Realloc(bTags,int,n_bdy_nodes);
+  Realloc(bXs,double,n_bdy_nodes);
+  Realloc(bYs,double,n_bdy_nodes);
+  Realloc(bZs,double,n_bdy_nodes);
+
+  bindvar("n_bdy_nodes",&n_bdy_nodes,INT);
+  bindvar("n_bdy_tags",&n_bdy_tags,INT);
+  bindvar("bNds",bNds,INT);
+  bindvar("bTags",bTags,INT);
+  bindvar("bXs", bXs,DOUBLE);
+  bindvar("bYs", bYs,DOUBLE);
+  bindvar("bZs", bZs,DOUBLE);
+
+  for(int ibn = 0; ibn < n_bdy_nodes; ibn++) {
+    fscanf(bdyfile,"%d %lf %lf %lf %d", &bNds[ibn], &bXs[ibn], &bYs[ibn], &bZs[ibn], &bTags[ibn]);
+    //bNds[ibn] += n_existed_atoms;
+  }
+
+  printf("read_bdy_nodes finished, n_bdy_nodes = %d\n",n_bdy_nodes);
+
+  return 0;
+}
+
+
+void XFEMFrame::shift_fem_node_id(int np0)
+{
+  for(int iele=0;iele<_NELE;iele++) {
+    for(int j=0;j<_NNODE_PER_ELEMENT;j++) {
+      elements[iele*_NNODE_PER_ELEMENT+j] += np0;
+    }
+  }
+
+  for(int ibn = 0; ibn < n_bdy_nodes; ibn++) {
+    bNds[ibn] += np0;
+  }
+}
+
+
+#if 0
+int XFEMFrame::read_elements(const char* fname)
+{
+    int iE, j, iN;
+    char *buffer; char *pp, *q;
+    int np, nframe;
+    char extfname[MAXFILENAMELEN];
+    double coeff;
+    int readCharCount, ind;
+
+    strcpy(extfname,fname);
+    LFile::SubHomeDir(extfname,extfname);
+    LFile::LoadToString(extfname,buffer,0);
+
+    pp=buffer;
+
+    q=pp; pp=strchr(pp, '\n'); if(pp) *(char *)pp++=0;
+    sscanf(q,"%d",&_NELE);
+
+    Alloc_Elements();
+    
+    for(iE=0;iE<_NELE;iE++)
+    {
+       q=pp; pp=strchr(pp, '\n'); if(pp) *(char *)pp++=0;
+       //INFO_Printf("%s\n",q);
+       for(j=0;j<_NNODE_PER_ELEMENT;j++)
+       {
+            sscanf(q,"%d%n",&iN,&readCharCount);
+            q += readCharCount;
+            ind=iE*_NNODE_PER_ELEMENT+j;
+            elements[ind] = iN;// +n_existed_atoms;
+            INFO_Printf("%d %d  ",ind,elements[ind]);    
+       }
+    }
+    //INFO_Printf("\n");
+
+    Free(buffer);
+    return 0;
+}
+
+#endif
+
+#ifdef _TEST
+
+/* Main Program Begins */
+class XFEMFrame sim;
+
+/* The main program is defined here */
+#include "main.cpp"
+
+#endif//_TEST

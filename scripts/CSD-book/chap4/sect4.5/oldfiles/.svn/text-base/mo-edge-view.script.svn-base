@@ -1,0 +1,125 @@
+# -*-shell-script-*-
+# MD code of BCC Mo. edge dislocation
+#------------------------------------------------------------
+#setnolog
+setoverwrite
+dirname = runs/CSD-book/chap3/moedge-view
+#--------------------------------------------
+#Read in potential file
+#
+#potfile = ~/Codes/MD++/mo_pot readpot
+#------------------------------------------------------------
+#Read in structure
+#
+#incnfile = ../moedge-300K/inter0050.cn readcn
+incnfile = ../moedge-300K/inter0020.cn readcn
+#------------------------------------------------------------
+findcorespec = [ 2 1.5 10 ] #findcore #quit
+#------------------------------------------------------------
+#colors for Central symmetry view
+color00 = "red" color01 = "blue" color02 = "green"
+color03 = "magenta" color04 = "cyan" color05 = "purple"
+color06 = "gray80"
+#-------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+hideatomenergy = [ 1 -6.725 -6 ]
+#highlightenergy = [ 1 -6.725 ]
+#plot_restrict = 1 plot_zmin = 0.4 plot_ymax = 0.5
+#plot_restrict = 1 plot_ymin = 0
+#plot_restrict = 1 plot_ymax = 0
+plot_select = 3 plot_highlight = [ 0 0 1 2 3 4 5 6 7 8 9 ]
+plotfreq = 10 
+rotateangles = [ 0 0 0 1.2 ]
+win_width = 600 win_height = 600
+#openwin  reversergb alloccolors rotate saverot
+#refreshnnlist eval
+#plot
+#sleep quit
+#-------------------------------------------------------------
+#(central symmetry)
+coloraxis = 2
+#refreshnnlist NCS = 8
+#calcentralsymmetry writeall = 1 finalcnfile = topol.cn writecn #quit
+#energyhistspec = [ 0 0 50 ] GnuPlotEnergyHistogram quit
+color_window = [ 2
+                 1.5  10  4
+                 10   20  6
+               ]
+#plot
+#sleep quit
+#------------------------------------------------------------
+#Find core
+incnfile = ../moedge-300K/inter0001.cn readcn findcore
+incnfile = ../moedge-300K/inter0002.cn readcn findcore
+incnfile = ../moedge-300K/inter0003.cn readcn findcore
+incnfile = ../moedge-300K/inter0004.cn readcn findcore
+incnfile = ../moedge-300K/inter0005.cn readcn findcore
+incnfile = ../moedge-300K/inter0006.cn readcn findcore
+incnfile = ../moedge-300K/inter0007.cn readcn findcore
+incnfile = ../moedge-300K/inter0008.cn readcn findcore
+incnfile = ../moedge-300K/inter0009.cn readcn findcore
+incnfile = ../moedge-300K/inter0010.cn readcn findcore
+incnfile = ../moedge-300K/inter0011.cn readcn findcore
+incnfile = ../moedge-300K/inter0012.cn readcn findcore
+incnfile = ../moedge-300K/inter0013.cn readcn findcore
+incnfile = ../moedge-300K/inter0014.cn readcn findcore
+incnfile = ../moedge-300K/inter0015.cn readcn findcore
+incnfile = ../moedge-300K/inter0016.cn readcn findcore
+incnfile = ../moedge-300K/inter0017.cn readcn findcore
+incnfile = ../moedge-300K/inter0018.cn readcn findcore
+incnfile = ../moedge-300K/inter0019.cn readcn findcore
+incnfile = ../moedge-300K/inter0020.cn readcn findcore
+incnfile = ../moedge-300K/inter0021.cn readcn findcore
+incnfile = ../moedge-300K/inter0022.cn readcn findcore
+incnfile = ../moedge-300K/inter0023.cn readcn findcore
+incnfile = ../moedge-300K/inter0024.cn readcn findcore
+incnfile = ../moedge-300K/inter0025.cn readcn findcore
+incnfile = ../moedge-300K/inter0026.cn readcn findcore
+incnfile = ../moedge-300K/inter0027.cn readcn findcore
+incnfile = ../moedge-300K/inter0028.cn readcn findcore
+incnfile = ../moedge-300K/inter0029.cn readcn findcore
+incnfile = ../moedge-300K/inter0030.cn readcn findcore
+incnfile = ../moedge-300K/inter0031.cn readcn findcore
+incnfile = ../moedge-300K/inter0032.cn readcn findcore
+incnfile = ../moedge-300K/inter0033.cn readcn findcore
+incnfile = ../moedge-300K/inter0034.cn readcn findcore
+incnfile = ../moedge-300K/inter0035.cn readcn findcore
+incnfile = ../moedge-300K/inter0036.cn readcn findcore
+incnfile = ../moedge-300K/inter0037.cn readcn findcore
+incnfile = ../moedge-300K/inter0038.cn readcn findcore
+incnfile = ../moedge-300K/inter0039.cn readcn findcore
+incnfile = ../moedge-300K/inter0040.cn readcn findcore
+incnfile = ../moedge-300K/inter0041.cn readcn findcore
+incnfile = ../moedge-300K/inter0042.cn readcn findcore
+incnfile = ../moedge-300K/inter0043.cn readcn findcore
+incnfile = ../moedge-300K/inter0044.cn readcn findcore
+incnfile = ../moedge-300K/inter0045.cn readcn findcore
+incnfile = ../moedge-300K/inter0046.cn readcn findcore
+incnfile = ../moedge-300K/inter0047.cn readcn findcore
+incnfile = ../moedge-300K/inter0048.cn readcn findcore
+incnfile = ../moedge-300K/inter0049.cn readcn findcore
+incnfile = ../moedge-300K/inter0050.cn readcn findcore
+incnfile = ../moedge-300K/inter0051.cn readcn findcore
+incnfile = ../moedge-300K/inter0052.cn readcn findcore
+incnfile = ../moedge-300K/inter0053.cn readcn findcore
+incnfile = ../moedge-300K/inter0054.cn readcn findcore
+incnfile = ../moedge-300K/inter0055.cn readcn findcore
+incnfile = ../moedge-300K/inter0056.cn readcn findcore
+incnfile = ../moedge-300K/inter0057.cn readcn findcore
+incnfile = ../moedge-300K/inter0058.cn readcn findcore
+incnfile = ../moedge-300K/inter0059.cn readcn findcore
+incnfile = ../moedge-300K/inter0060.cn readcn findcore
+incnfile = ../moedge-300K/inter0061.cn readcn findcore
+incnfile = ../moedge-300K/inter0062.cn readcn findcore
+incnfile = ../moedge-300K/inter0063.cn readcn findcore
+incnfile = ../moedge-300K/inter0064.cn readcn findcore
+incnfile = ../moedge-300K/inter0065.cn readcn findcore
+incnfile = ../moedge-300K/inter0066.cn readcn findcore
+incnfile = ../moedge-300K/inter0067.cn readcn findcore
+incnfile = ../moedge-300K/inter0068.cn readcn findcore
+incnfile = ../moedge-300K/inter0069.cn readcn findcore

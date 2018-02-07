@@ -1,0 +1,213 @@
+# -*-shell-script-*-
+# Monte Carlo simulation of Stinger-Weber Silicon
+#setnolog
+#setoverwrite
+dirname = runs/simc
+#------------------------------------------------------------
+#Read in structure
+#
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si216-perf.cn readcn setconfig1 Ecoh = -4.63 
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si216-600K-4.cn readcn
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si216-600K-EC.cn readcn
+#
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-perf.cn readcn setconfig1 Ecoh = -4.63 
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn 
+#
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-perf.cn readcn setconfig1 Ecoh = -4.63 
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+#incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+makecnspec = [ 1 0 0 2
+               0 1 0 2
+               0 0 1 2 ]
+#makecn  finalcnfile = perf.cn writecn quit
+#-------------------------------------------------------------
+#Move atom away from perfect lattice
+#moveatomspec = [ 1 0.5 0 0 76 ] moveatom #3x3x2
+#moveatomspec = [ 1 0.5 0 0 189 ] moveatom #4x4x4
+#
+#Create vacancy
+#pickfixedatomspec = [ 1 45 ] removepickedatoms
+#pickfixedatomspec = [ 1 116 ] removepickedatoms #3x3x3
+#
+#Test spring constant
+#eval  #ecspring = 18.9 #(eV/A^2)
+#moveatomspec = [ 1 0.01 0 0 0 ] moveatom eval
+#moveatomspec = [ 1 0.01 0 0 0 ] moveatom eval
+#moveatomspec = [ 1 0.01 0 0 0 ] moveatom eval
+#moveatomspec = [ 1 0.01 0 0 0 ] moveatom eval quit
+#------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.67 bondradius = 0.2 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red
+backgroundcolor = gray fixatomcolor = yellow
+#energycolorbar = [ 1 -4.70 -4.50 ]  highlightcolor = red
+highlightenergy = [ 1 -4.5 ]
+#highlightenergy = [ 1 -4.52 ]
+#hideatomenergy = [ 1 -4.55 -4 ]
+plot_select = 1 plot_highlight = [ 0 0 1 2 3 4 5 6 7 8 9 ]
+plotfreq = 200
+rotateangles = [ 0 0 0 1.2 ]
+#win_width = 300 win_height = 900
+#openwin reversergb alloccolors rotate saverot refreshnnlist eval plot
+#openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#------------------------------------------------------------
+#Monte Carlo Simulation
+#
+totalsteps = 500000 saveprop = 1 openpropfile savepropfreq = 100 printfreq = 5000
+#T_OBJ = 600   mcatom = 0 timestep = 0.1 #Angstrom
+#T_OBJ = 600  mcatom = -1 timestep = 0.01 #Angstrom
+T_OBJ = 600  mcatom = -1 timestep = 0.02 #Angstrom
+#randseed = 10129 srand48
+srand48bytime
+#runMC finalcnfile = final.cn writecn quit
+#
+switchfreq = 10  ecspring = 10
+#lambda0 = 0 lambda1 = 0 runMCSWITCH finalcnfile = final.cn writecn
+#lambda0 = 1 lambda1 = 1 runMCSWITCH finalcnfile = final.cn writecn quit
+#lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = final.cn writecn
+#sleep quit
+#------------------------------------------------------------
+#Monte Carlo Simulation
+#totalsteps = 100000   printfreq = 5000
+totalsteps = 500000   printfreq = 5000
+#
+printfreq = 10000 savepropfreq = 100
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01a.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-3.cn readcn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01b.cn writecn
+quit
+#
+printfreq = 10000 savepropfreq = 100
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01a.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+incnfile = ~/Codes/MD++/structures/CSD-book/chap3/si64-600K-EC.cn readcn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f01b.cn writecn
+quit
+#
+
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+#
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+lambda0 = 0 lambda1 = 1 runMCSWITCH finalcnfile = f01.cn writecn
+lambda0 = 1 lambda1 = 0 runMCSWITCH finalcnfile = f10.cn writecn
+#
+sleep quit
+

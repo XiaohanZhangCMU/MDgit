@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -N nebpar
+#PBS -j oe
+#PBS -l nodes=5:ppn=8,walltime=1:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+#ls $PWD/bin
+
+#lamboot $PBS_NODEFILE # starts lam on the specified nodes
+#
+#echo $PWD
+
+export MPDSNP=`uniq $PBS_NODEFILE |wc -l| cut -d'/' -f1`
+cat $PBS_NODEFILE | uniq > mpd_nodefile_$USER
+export MPD_NODEFILE=mpd_nodefile_$USER
+mpdboot -v -n $MPDSNP -f $MPD_NODEFILE
+rm $MPD_NODEFILE
+mpdtrace -l
+
+mpiexec -np $ncpu bin/sw_su-ahpcrc_mpich scripts/CSD-book/chap7/sect7.3/si-kink-nebmep-parallel.tcl
+
+#time $cmd 
+
+#wipe $PBS_NODEFILE
+mpdallexit

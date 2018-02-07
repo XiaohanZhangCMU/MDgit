@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -N Us-Si-homo_Step4e
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=120:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 120 400 & 
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 090 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 092 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 095 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 100 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 105 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 110 500 &
+sleep 1
+bin/sw_mc2_mpich scripts/work/Us-Si-homo/C4_MEP_calculation.tcl 2000 115 500 &
+
+
+wait
+#wipe $PBS_NODEFILE
+

@@ -1,0 +1,56 @@
+# -*-shell-script-*-
+setnolog
+setoverwrite
+dirname = runs/si-screw-dipole
+#------------------------------------------------------------
+#Read in structure
+#incnfile = relaxed.cn readcn
+#------------------------------------------------------------
+#Create Perfect Lattice Configuration
+#
+latticestructure = diamond-cubic
+latticeconst = 5.4309529817532409 #(A) for Si
+makecnspec = [ 1 1 -2  4
+               1 1  1  3
+               1 -1 0  1 ]
+makecn  finalcnfile = perf.cn writecn
+#-------------------------------------------------------------
+#Create Dislocation Dipole, screw [111]
+input = [  3  #z, dislocation line direction
+           1  #x, separation direction betwen two dislocations in the dipole
+           0 0 0.5           # Burgers vector, bx,by,bz in scaled coordinate
+           0 -0.25  0.25     #(y0, x0, x1)
+           0.305             # nu, Poisson's ratio
+           -10 10 -10 10     # number of images
+           1                 # tilt box
+        ]
+makedipole finalcnfile = dipole.cn writecn
+#-------------------------------------------------------------
+#
+#Plot Configuration
+#
+atomradius = 0.9 bondradius = 0.3 bondlength = 2.8285 #for Si
+atomcolor = orange highlightcolor = purple  bondcolor = red
+backgroundcolor = gray fixatomcolor = yellow
+color00 = "orange"  color01 = "purple" color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"
+plot_color_windows = [ 2
+                          -10 -4.5 0  #color00 = orange
+                          -4.5 10  1  #color01 = purple
+                     ]
+plot_atom_info = 1
+plotfreq = 10
+rotateangles = [ 0 0 0 1.5 ]
+win_width = 600 win_height = 600
+#win_width = 200 win_height = 150
+openwin alloccolors rotate saverot refreshnnlist eval plot
+#sleep quit
+#------------------------------------------------------------
+#Conjugate-Gradient relaxation
+conj_ftol = 1e-7 conj_itmax = 1000 conj_fevalmax = 1000
+conj_fixbox = 1 
+relax
+eval finalcnfile = relaxed.cn writecn
+sleep quit
+#-------------------------------------------------------------

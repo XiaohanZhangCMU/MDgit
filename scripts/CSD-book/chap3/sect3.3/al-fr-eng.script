@@ -1,0 +1,37 @@
+# -*-shell-script-*-
+# MD++ implementation of Ercolessi-Adams (Al)
+# view Frank-Read source by local energy
+setnolog
+setoverwrite
+dirname = runs/al-fr
+#------------------------------------------------------------
+#Read in structure created by al-fr-make.script
+#
+incnfile = alfr0.cn readcn
+#incnfile = alfr1.cn readcn
+#-------------------------------------------------------------
+#Enlarge neighbor list size
+NNM = 100 # number of neighbors per atom (default: 60)
+#-------------------------------------------------------------
+#Plot Configuration
+atomradius = 1.0 bondradius = 0.3 bondlength = 0
+atomcolor = cyan highlightcolor = purple backgroundcolor = gray
+bondcolor = red fixatomcolor = yellow
+color00 = "orange"  color01 = "red"    color02 = "green"
+color03 = "magenta" color04 = "cyan"   color05 = "purple"
+color06 = "gray80"  color07 = "white"  color08 = "blue"
+#
+plot_color_axis = 0  #0: use local energy (default)
+#
+plot_color_windows = [ 2
+                       -3.32  -3.29 6 #color06 = gray80
+                       -3.29   10   8 #color08 = blue
+                      ]
+#plot_limits = [ 1 -10 10 -0.05 10 -10 10 ]
+plot_atom_info = 1  plotfreq = 10 
+rotateangles = [ 0 0 0 1.5 ]
+#
+win_width = 600 win_height = 600
+openwin alloccolors rotate saverot refreshnnlist eval plot
+sleep quit
+#-------------------------------------------------------------
