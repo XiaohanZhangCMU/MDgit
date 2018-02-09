@@ -10,16 +10,22 @@
 #ifndef _FEM_H
 #define _FEM_H
 #include <fstream>      // std::ofstream
-
 #include <cassert>
 #include "mdparallel.h"
 
 #define _USECUDA
 #ifdef _USECUDA
+//#define DEBUG_USECUDA
+#include <cuda_runtime.h>
 #include "linalg3_cu.h"
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code,const char *file,int line,bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "GPUassert: %s %s %dn",cudaGetErrorString(code),file,line);
+    if (abort) { getchar(); exit(code); } } } 
+#define _MAX_NELEM_SHARE_NODE 10
 #endif
 
-#define _MAX_NELEM_SHARE_NODE 10
 
 class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
 {
@@ -42,20 +48,41 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     int *_d_map23;
     int *_d_fixed;
     int *_d_colorids;
-    class G_Matrix33 *_d_VIRIAL_IND;
 
+    double *_d_VIRIAL_IND;
+    double * _d_H_element;
     double *_d_gauss_weight; 
     double *_d_dFdu;        
     double *_d_EPOT;
     double *_d_EPOT_IND;
     double* _d_EPOT_RMV;
+    double *_h_EPOT;        /* used for host reduction only */
     G_Vector3 *_d_SR;
     G_Vector3 *_d_SRref;       
     G_Vector3 *_d_Rref;        
     G_Vector3 *_d_F;
-    G_Vector3 *_d_F_padding; //for padding forces of elements
-    G_Matrix33 _d_H;
+    G_Vector3 *_d_F_padding; /* padding forces to avoid race problem */
+    int check_host_device_memory_transfer(); 
+#endif
 
+#ifdef DEBUG_USECUDA
+    int *_h_d_elements;
+    int *_h_d_inv_elements;
+    int *_h_d_map23;
+    int *_h_d_fixed;
+    int *_h_d_colorids;
+    class G_Matrix33 *_h_d_VIRIAL_IND;
+    double *_h_d_H_element;
+    double *_h_d_gauss_weight; 
+    double *_h_d_dFdu;        
+    double *_h_d_EPOT;
+    double *_h_d_EPOT_IND;
+    double *_h_d_EPOT_RMV;
+    G_Vector3 *_h_d_SR;
+    G_Vector3 *_h_d_SRref;       
+    G_Vector3 *_h_d_Rref;        
+    G_Vector3 *_h_d_F;
+    G_Vector3 *_h_d_F_padding; //for padding forces of elements
 #endif
 
     char ELEMENT_TYPE[100], ELEMENT_INT_TYPE[100];
@@ -98,13 +125,8 @@ public:
     void create_inverse_connectivities_matrix();
     void islam_fem_energy_force();
     void snap_fem_energy_force();
-    void cuda_snap_fem_energy_force();
 
     virtual void potential();
-
-    //void fem_energy_only();
-    //virtual void potential_energyonly();
-
     void Alloc_Elements();
     void Alloc_Element_Coeff();
     
@@ -115,7 +137,6 @@ public:
     virtual void initparser();
     virtual int exec(const char *nam);
 
-    // The following is from xfem
 public:
   char fem_bdy_nodes_file[MAXFILENAMELEN];
   char contact_file[MAXFILENAMELEN];
@@ -132,7 +153,6 @@ public:
   int read_bdy_nodes(const char*);
   int read_contact(const char*);
   int _ReadColorID;
-  //int read_elements(const char*);
 #ifdef _PARALLEL
   void Broadcast_FEM_Param();
 #endif
@@ -147,6 +167,7 @@ public:
   void cuda_memory_alloc_elements(void);
   void cuda_memory_alloc_element_coeff(void);
   void free_device_ptr(void);
+  void cuda_snap_fem_energy_force();
 #endif
 };
 

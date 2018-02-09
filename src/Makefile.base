@@ -96,12 +96,12 @@ F90OPT.corn.R = -O -fno-second-underscore
 
 ##############
 # Rye (stanford university cluster)
-CC.rye=nvcc --gpu-architecture=sm_20
+CC.rye=nvcc -gencode arch=compute_52,code=sm_52
 OPT.rye.D=-Wall -g3 -D_i686 -D_FORTIFY_SOURCE=1
 OPT.rye.R=-O3 -D_i686 
 LOPT.rye=-L/usr/X11R6/lib -lpthread
 XLIBS.rye=-lX11
-TCLLIBS.rye=-ltcl8.5
+TCLLIBS.rye=-L/home/xzhang11/tcl/lib -ltcl8.5
 F77.rye = g77
 F90.rye = gfortran
 cc.rye = gcc
@@ -155,17 +155,17 @@ ifeq ($(CUDA),yes)
 else
   CC.mc2 = icc -w1 -Wno-unknown-pragmas
   OPT.mc2.D=-g3 -shared-intel
-  OPT.mc2.R=-O3 -xSSE -ipo -shared-intel
+  OPT.mc2.R=-O3 -xSSE -shared-intel #-ipo
 endif
 #OPT.mc2.R=-O3 -xO -ipo
 LOPT.mc2=-L/usr/X11R6/lib -lpthread
 XLIBS.mc2=-lX11
-TCLLIBS.mc2=-ltcl8.5
-TKLIBS.mc2=-ltk8.5
+TCLLIBS.mc2=-L/home/xzhang11/tcl/lib -ltcl8.5
+TKLIBS.mc2=-L/home/xzhang11/tcl/lib -ltk8.5
 FFTWINCLUDE.mc2=
 FFTWLIBS.mc2=
-PYINCLUDE.mc2=-I/export/apps/python/2.7.8/include/python2.7/
-PYLIBS.mc2=-L/export/apps/python/2.7.8/lib/ -lpython2.7
+#PYINCLUDE.mc2=-I/export/apps/python/2.7.8/include/python2.7/
+#PYLIBS.mc2=-L/export/apps/python/2.7.8/lib/ -lpython2.7
 F77.mc2 = ifort
 F90.mc2 = ifort
 cc.mc2 = $(CC.mc2)
@@ -175,9 +175,9 @@ F90LIBS.mc2_mpich=-lifcore
 #F90LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
 F77LIBS.mc2=-L/share/apps/intel/lib/intel64 -lifcore 
 F90LIBS.mc2=-L/share/apps/intel/lib/intel64 -lifcore
-HDF5LIBS.mc2=-L"$(HOME)/usr/lib" -lhdf5
-GSLINCLUDE.mc2=-I$(HOME)/usr/include
-GSLLIBS.mc2=-L$(HOME)/usr/lib -lgsl -lgslcblas -lm
+#HDF5LIBS.mc2=-L"$(HOME)/usr/lib" -lhdf5
+#GSLINCLUDE.mc2=-I$(HOME)/usr/include
+#GSLLIBS.mc2=-L$(HOME)/usr/lib -lgsl -lgslcblas -lm
 
 ##############
 # OpenMP for MC2
@@ -340,8 +340,8 @@ endif
 
 LOPT.sherlock=-L/usr/X11R6/lib -lpthread
 XLIBS.sherlock=-lX11
-TCLLIBS.sherlock=-ltcl8.5
-TKLIBS.sherlock=-ltk8.5
+TCLLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltcl8.6
+TKLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltk8.6
 #PYINCLUDE.sherlock=-I/export/apps/python/2.7.8/include/python2.7/
 #PYLIBS.sherlock=-L/export/apps/python/2.7.8/lib/ -lpython2.7
 F77.sherlock = g77
@@ -352,8 +352,8 @@ CC.sherlock = g++
 #F90LIBS.sherlock_mpich=-lifcore
 #F77LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
 #F90LIBS.mc2=-L/opt/intel/fce/10.1.022/lib -lifcore
-F77LIBS.sherlock=-lg2c -lstdc++
-F90LIBS.sherlock=-lg2c -lstdc++ -lgfortran
+#F77LIBS.sherlock=-lg2c -lstdc++
+#F90LIBS.sherlock=-lg2c -lstdc++ -lgfortran
 
 ##############
 # SU-AHPCRC

@@ -26,6 +26,7 @@ class G_Vector3
 public:
  double x, y, z;
  CUDA_CALLABLE_MEMBER   G_Vector3():x(0),y(0),z(0){};
+ CUDA_CALLABLE_MEMBER   G_Vector3(const Vector3& a){x=a.x; y=a.y;z=a.z;};
  CUDA_CALLABLE_MEMBER   double operator [] (int i) const { return (&x)[i]; }
  CUDA_CALLABLE_MEMBER   double & operator [] (int i) { return (&x)[i]; }
  CUDA_CALLABLE_MEMBER   G_Vector3(double a,double b,double c):x(a),y(b),z(c){};
@@ -70,6 +71,13 @@ public:
  CUDA_CALLABLE_MEMBER   void operator *= (const G_Vector3 &a) { x*=a.x;y*=a.y;z*=a.z; }
  CUDA_CALLABLE_MEMBER   void operator /= (const G_Vector3 &a) { x/=a.x;y/=a.y;z/=a.z; }
 #endif
+
+ CUDA_CALLABLE_MEMBER   bool operator == (const G_Vector3 &b) {
+   if(fabs(x- b.x)<1e-9&&fabs(y- b.y)<1e-9&&fabs(z- b.z)<1e-9)
+     return true; 
+   else 
+     return false; 
+ }
     
  CUDA_CALLABLE_MEMBER   void set(const double a,const double b,const double c){x=a;y=b;z=c;}
  CUDA_CALLABLE_MEMBER   void set(const double a[]){x=a[0];y=a[1];z=a[2];}

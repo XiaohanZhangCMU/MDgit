@@ -291,17 +291,15 @@ alglue: alglue.cpp aluminum.o mdparallel.o md.o $(LIBS)
 	$(rshlib)
 
 
-ifeq ($(CUDA),yes)
 fem_cuda.o: 
-	nvcc  -c -gencode=arch=compute_61,code=sm_61 fem_cuda.cu
-fem: fem.cpp fem_cuda.o mdparallel.o md.o $(LIBS)
+#	nvcc  -c -gencode=arch=compute_61,code=sm_61 fem_cuda.cu
+	nvcc  -c -gencode=arch=compute_35,code=sm_35 fem_cuda.cu
+femgpu: fem.cpp fem_cuda.o mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS) -lcudart -lstdc++
 	$(rshlib)
-else
-fem: fem.cpp mdparallel.o md.o $(LIBS)
+femcpu: fem.cpp mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS) 
 	$(rshlib)
-endif
 
 xfem: xfem.cpp fem.o mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS)
