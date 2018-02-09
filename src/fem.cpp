@@ -95,10 +95,6 @@ void FEMFrame::Alloc()
     Realloc(_Rref, Vector3,size);
     bindvar("SRref",_SRref,DOUBLE);
     bindvar("Rref",_Rref,DOUBLE);
-
-//    conn_sz = _NELE*_NNODE_PER_ELEMENT;
-//    Realloc(elements,int,conn_sz);
-//    bindvar("elements",elements,INT);
     Realloc(map23,int,2);
     bindvar("map23",map23,INT);
 
@@ -134,6 +130,7 @@ void FEMFrame::Alloc_Element_Coeff()
     size = _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT  * _NELE;
     Realloc(dFdu,double,size);
     bindvar("dFdu",dFdu,DOUBLE);
+
 #ifdef _USECUDA
     cuda_memory_alloc_element_coeff();
 #endif
@@ -183,7 +180,6 @@ int FEMFrame::read_elements(const char* fname)
        }
     }
     //INFO_Printf("\n");
-
     Free(buffer);
     return 0;
 }
@@ -208,10 +204,9 @@ int FEMFrame::read_fem_coeff(const char* fname)
         }
    }
    else if (_EquationType == 0 || _EquationType == 1) {
-	    INFO_Printf("_NELE = %d\n", _NELE);
-      read_uniform_fem_coeff(fname);
+     INFO_Printf("_NELE = %d\n", _NELE);
+     read_uniform_fem_coeff(fname);
    } 
-
    return 0;
 }
 
@@ -220,7 +215,6 @@ int FEMFrame::read_uniform_fem_coeff(const char* fname)
 {
     int iA, j, k, m, iN;
     char *buffer; char *pp, *q;
-    //int np, nframe;
     char extfname[MAXFILENAMELEN];
     double coeff;
     int readCharCount, ind;
@@ -298,19 +292,14 @@ int FEMFrame::read_uniform_fem_coeff(const char* fname)
            }
        }
     }
-
     Free(buffer);
     return 0;
 }
 
 int FEMFrame::read_1stfem_to_Alloc(const char* fname)
 {
-    //int iA, j, k, m, iN;
     char *buffer; char *pp, *q;
-    //int np, nframe;
     char extfname[MAXFILENAMELEN];
-    //double coeff;
-    //int readCharCount, ind;
 
     strcpy(extfname,fname);
     LFile::SubHomeDir(extfname,extfname);
@@ -334,7 +323,6 @@ int FEMFrame::read_element_wise_fem_coeff(const char* fname, int dfdustart)
 {
     int iA, j, k, m, iN;
     char *buffer; char *pp, *q;
-    //int np, nframe;
     char extfname[MAXFILENAMELEN];
     double coeff;
     int readCharCount, ind;
@@ -735,16 +723,13 @@ void FEMFrame::potential() {
 }
 
 void FEMFrame::snap_fem_energy_force() {
-  /* no need of neighbor list */
-  int i,iele,j,jpt,iA, in, ip, iq, ind, p, q, r;
-  Vector3 dsj, drj, elem_center;
-  Matrix33 Fe, Fdef, B, C, Cinv, FCinvtran, dEdF, hinv;
-  Matrix33 eigF, invEigF;
-  double Eele, Eint, Jet, trace, detB, J2;
-  double lambda, mu, temp;
-    /*
-      Xiaohan: print out stress in the membrane
-    */    
+    /* no need of neighbor list */
+    int i,iele,j,jpt,iA, in, ip, iq, ind, p, q, r;
+    Vector3 dsj, drj, elem_center;
+    Matrix33 Fe, Fdef, B, C, Cinv, FCinvtran, dEdF, hinv;
+    Matrix33 eigF, invEigF;
+    double Eele, Eint, Jet, trace, detB, J2;
+    double lambda, mu, temp;
     Matrix33 E, E2, I, pk2, temp1, temp2;    
     I[0][0]=I[1][1]=I[2][2]=1;
 
@@ -755,9 +740,6 @@ void FEMFrame::snap_fem_energy_force() {
     /* _EPOT, _F, _EPOT_IND, _VIRIAL all local */
     _EPOT=0; //put this back
     for(i=0;i<_NP;i++) {
-      /* xiaohan: this removes the interaction between substrate with fe nodes which have species = 2*/
-      // if (species[i] == 0) 
-      // 	continue;
       _F[i].clear(); _EPOT_IND[i]=0; _EPOT_RMV[i]=0; _VIRIAL_IND[i].clear();
     }
 
@@ -773,8 +755,7 @@ void FEMFrame::snap_fem_energy_force() {
       for(j=0;j<_NNODE_PER_ELEMENT;j++) {
 	jpt=elements[iele*_NNODE_PER_ELEMENT+j];	
         for (i = 0;i<_NDIM;i++)  {
-	  elem_center[i] += 1.0/_NNODE_PER_ELEMENT *_Rref[jpt][i];  /* put this into a separate function RrefHtoSref */
-//	  INFO_Printf("elem_center[%d] = %g\n", i, elem_center[i]);
+	  elem_center[i] += 1.0/_NNODE_PER_ELEMENT *_Rref[jpt][i]; /* put this into a separate function RrefHtoSref */
 	}
       }
 
@@ -1169,9 +1150,6 @@ Matrix33 FEMFrame::getEigenF(Vector3 p, Matrix33 Fdef) {
   
   return I;
 }
-
-
-
 
 #ifdef _PARALLEL
 void FEMFrame::Broadcast_FEM_Param()

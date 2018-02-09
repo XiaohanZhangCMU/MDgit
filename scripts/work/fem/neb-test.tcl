@@ -16,6 +16,7 @@ proc initmd { status pbid meshid eqnType } {
     MD++ dirname = runs/fem/fem-$status-$pbid-$meshid-$eqnType
   }
   exec cp -r ../../../scripts/work/fem/neb-test.tcl .
+  MD++ NNM = 400
 }
 
 #--------------------------------------------
@@ -80,7 +81,19 @@ puts "pbid = $pbid"
 puts "meshid = $meshid"
 puts "eqnType = $eqnType"
 
-MD++ test_saxpy
+set USEGPU 0
+set myname [ MD++_Get "myname" ]
+if { [ string match "*femcpu*" $myname ] } {
+  set USEGPU 0
+} elseif { [ string match "*femgpu*" $myname ] } {
+  puts "femgpu, set USEGPU =1"
+  set USEGPU 1
+} else { 
+  puts "USEGPU set default zero"
+}
+if { $USEGPU == 1 } {
+  MD++ test_saxpy
+}
 
 initmd $status $pbid $meshid $eqnType
 MD++ EquationType = $eqnType
@@ -130,7 +143,9 @@ puts "n_bdy_nodes = $n_bdy_nodes"
 
 if { $status == 0 } {
   MD++ RtoRref
-  MD++ cuda_memcpy_all
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
 #  setup_window
 #  openwindow
 
@@ -306,7 +321,7 @@ puts "I am here 6"
      
     if { 1 } {
 puts "I am here 7"
-      relax_fixbox
+#      relax_fixbox
 puts "I am here 7.1"
 
       if { $x_eigen_strain == 1 } { 
@@ -327,10 +342,11 @@ puts "I am here 8"
     MD++ y_eigen_strain = 1.38
 
     MD++  conj_ftol = 1e-2 conj_itmax = 2600 conj_fevalmax = 33000
-    MD++ conj_fixbox = 1 relax 
+
+  MD++ conj_fevalmax = 1000 relax quit
+  MD++ eval 
     MD++ finalcnfile = "curve-2.cn" writecn
 
-    MD++ eval plot 
     set perturb_2_curved_band 1
 
     if { $perturb_2_curved_band == 1 } {
