@@ -58,6 +58,7 @@ public:
     double *_d_phix_spline, *_d_frho_spline;
     double *_d_rval, *_d_rhoval;
     double *_d_atpe3b, *_d_rhotot, *_d_embf, *_d_embfp;
+    double *_d_rhotot_padding;
     int *_d_nbst;
 
     double *_d_EPOT;
@@ -66,6 +67,8 @@ public:
     double *_d_VIRIAL_IND_element;
     double *_d_VIRIAL_IND_element_padding;
     double *_d_EPOT_IND;
+    double *_d_EPOT_IND_padding;
+    int *_d_fixed;
     int *_d_species;
     int *_d_nindex;
     int *_d_nn;
@@ -75,6 +78,33 @@ public:
 //                                    0     1      2      3       4       5       6     7        8      9
     double *fscalars;    /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
     double *_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+#endif
+
+#ifdef DEBUG_USECUDA
+    double _h_d_rho[2][NGRID], _h_d_rhop[2][NGRID], _h_d_phi[2][NGRID], _h_d_phip[2][NGRID];
+    double _h_d_phix[NGRID], _h_d_phipx[NGRID];
+    double _h_d_frho[2][NGRID], _h_d_frhop[2][NGRID];
+    double _h_d_rho_spline[2][NGRID][4], _h_d_phi_spline[2][NGRID][4];
+    double _h_d_phix_spline[NGRID][4], _h_d_frho_spline[2][NGRID][4];
+    double _h_d_rval[NGRID], _h_d_rhoval[NGRID];
+
+    double *_h_d_atpe3b, *_h_d_rhotot, *_h_d_embf, *_h_d_embfp;
+    int *_h_d_nbst;
+
+    double *_h_d_EPOT;
+    Matrix33 _h_d_H;
+    Matrix33 _h_d_VIRIAL;
+    Matrix33 *_h_d_VIRIAL_IND;
+    double *_h_d_EPOT_IND;
+    int *_h_d_species;
+    int **_h_d_nindex;
+    int *_h_d_nn;
+    Vector3 *_h_d_SR;
+    Vector3 *_h_d_F;
+    Vector3 *_h_d_F_padding;
+//                                  0     1      2      3       4       5       6     7        8      9
+    double *_h_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+    int check_host_device_memory_transfer(); 
 #endif
    
     int NumOfChanged,*ListOfChanged;

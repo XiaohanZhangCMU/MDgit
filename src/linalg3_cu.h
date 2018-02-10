@@ -162,6 +162,10 @@ public:
  double element[3][3];
 public:
  CUDA_CALLABLE_MEMBER   G_Matrix33(){clear();}
+ CUDA_CALLABLE_MEMBER   G_Matrix33(const Matrix33 e)
+        {element[0][0]=e.element[0][0];element[0][1]=e.element[0][1];element[0][2]=e.element[0][2];
+         element[1][0]=e.element[1][0];element[1][1]=e.element[1][1];element[1][2]=e.element[1][2];
+         element[2][0]=e.element[2][0];element[2][1]=e.element[2][1];element[2][2]=e.element[2][2];}
  CUDA_CALLABLE_MEMBER   G_Matrix33(double e1,double e2,double e3,
              double e4,double e5,double e6,
              double e7,double e8,double e9)
@@ -344,6 +348,14 @@ public:
         n[2][2]=element[2][0]*m[0][2]+element[2][1]*m[1][2]+element[2][2]*m[2][2];
         return n;
     }
+ CUDA_CALLABLE_MEMBER   bool operator == (const G_Matrix33 &b) {
+	for(int i = 0;i<3;i++) for(int j = 0;j<3;j++) {
+          if(fabs(element[i][j] -b.element[i][j])>1e-15) 
+            return false; 
+	}
+        return true; 
+ }
+
  CUDA_CALLABLE_MEMBER   G_Matrix33 & addnvv(double n,G_Vector3 &a,G_Vector3 &b)
     {
         element[0][0]+=n*a.x*b.x;

@@ -270,10 +270,10 @@ void EAMFrame::rhoeam()
     }
 
     /* debug */
-#if 0
+#if 1
     for(i=0;i<_NP;i++)
     {
-        INFO_Printf("atom[%d] rho=%e\n",i,rhotot[i]);
+        INFO_Printf("atom[%d] rhotot=%e\n",i,rhotot[i]);
     }
 #endif
     
@@ -309,10 +309,10 @@ void EAMFrame::rhoeam()
     }    
 
     /* debug */
-#if 0
+#if 1
     for(i=0;i<_NP;i++)
     {
-        INFO_Printf("atom[%d] embf=%e\n",i,embf[i]);
+        INFO_Printf("atom[%d] embf=%e, _EPOT_IND=%e, _EPOT=%e\n",i,embf[i], _EPOT_IND[i], _EPOT);
     }
 #endif
 }

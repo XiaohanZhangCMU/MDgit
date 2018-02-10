@@ -62,7 +62,6 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     G_Vector3 *_d_Rref;        
     G_Vector3 *_d_F;
     G_Vector3 *_d_F_padding; /* padding forces to avoid race problem */
-    int check_host_device_memory_transfer(); 
 #endif
 
 #ifdef DEBUG_USECUDA
@@ -83,6 +82,7 @@ class FEMFrame : public virtual MDPARALLELFrame /* FEM with brick elements */
     G_Vector3 *_h_d_Rref;        
     G_Vector3 *_h_d_F;
     G_Vector3 *_h_d_F_padding; //for padding forces of elements
+    int check_host_device_memory_transfer(); 
 #endif
 
     char ELEMENT_TYPE[100], ELEMENT_INT_TYPE[100];
