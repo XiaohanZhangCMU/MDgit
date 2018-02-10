@@ -11,3 +11,5 @@ tests
 *.h.*
 runs
 fem_modload.sh
+*.dat
+.svn

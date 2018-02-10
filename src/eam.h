@@ -9,7 +9,22 @@
 #ifndef _EAM_H
 #define _EAM_H
 
+#include <assert.h>
 #include "mdparallel.h"
+
+#define _USECUDA
+#ifdef _USECUDA
+#define DEBUG_USECUDA
+#include <cuda_runtime.h>
+#include "linalg3_cu.h"
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code,const char *file,int line,bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "GPUassert: %s %s %dn",cudaGetErrorString(code),file,line);
+    if (abort) { getchar(); exit(code); } } } 
+#define _MAX_NELEM_SHARE_NODE 10
+#endif
+
 
 class EAMFrame : public MDPARALLELFrame
 { /* EAM/MEAM potential */
@@ -18,14 +33,14 @@ public:
     int eamfiletype; /* 1: single element, 2: binary element */
     int eamgrid;
     /* EAM potential parameters */
-#define NGRID 10000
+#define NGRID 6000
     char title3[500];
     int ntyp;
     double rmass, rlatt, drar, drhoar, actual, actual2, rmin;
-    double rho[4][NGRID], rhop[4][NGRID], phi[2][NGRID], phip[2][NGRID];
+    double rho[2][NGRID], rhop[2][NGRID], phi[2][NGRID], phip[2][NGRID];
     double phix[NGRID], phipx[NGRID];
     double frho[2][NGRID], frhop[2][NGRID];
-    double rho_spline[4][NGRID][4], phi_spline[2][NGRID][4];
+    double rho_spline[2][NGRID][4], phi_spline[2][NGRID][4];
     double phix_spline[NGRID][4], frho_spline[2][NGRID][4];
     double rval[NGRID], rhoval[NGRID];
     double petrip, rhocon, rhomax;
@@ -34,6 +49,33 @@ public:
     double *atpe3bUMB, *rhototUMB, *embfUMB;
     double MC_maxd_trial;
     int MC_need, *nbst, *nbst1;
+
+#ifdef _USECUDA
+    double *_d_rho, *_d_rhop, *_d_phi, *_d_phip;
+    double *_d_phix, *_d_phipx;
+    double *_d_frho, *_d_frhop;
+    double *_d_rho_spline, *_d_phi_spline;
+    double *_d_phix_spline, *_d_frho_spline;
+    double *_d_rval, *_d_rhoval;
+    double *_d_atpe3b, *_d_rhotot, *_d_embf, *_d_embfp;
+    int *_d_nbst;
+
+    double *_d_EPOT;
+    double *_d_H_element;
+    double *_d_VIRIAL_element;
+    double *_d_VIRIAL_IND_element;
+    double *_d_VIRIAL_IND_element_padding;
+    double *_d_EPOT_IND;
+    int *_d_species;
+    int *_d_nindex;
+    int *_d_nn;
+    G_Vector3 *_d_SR;
+    G_Vector3 *_d_F;
+    G_Vector3 *_d_F_padding;
+//                                    0     1      2      3       4       5       6     7        8      9
+    double *fscalars;    /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+    double *_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+#endif
    
     int NumOfChanged,*ListOfChanged;
     
@@ -46,6 +88,11 @@ public:
                  atpe3bUMB(0), rhototUMB(0), embfUMB(0),
                  MC_maxd_trial(0), MC_need(0),
                  nbst(0), nbst1(0) {};
+    ~EAMFrame() {
+#ifdef _USECUDA 
+      free_device_ptr();
+#endif
+    }
 
     virtual double potential_energyonly_before(int iatom);
     virtual double potential_energyonly_after(int iatom); 
@@ -75,6 +122,15 @@ public:
     virtual void initparser();
     
     virtual int exec(const char *nam);
+#ifdef _USECUDA
+    void kraeam_cuda(void);
+    void rhoeam_cuda(void);
+    void cuda_memory_alloc(void);
+    void cuda_memcpy_all(void);
+    int test_saxpy(void);
+    void free_device_ptr(void);
+
+#endif
 
 #ifdef _PARALLEL
     void Broadcast_EAM_Param();

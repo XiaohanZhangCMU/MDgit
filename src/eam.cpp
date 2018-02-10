@@ -429,6 +429,7 @@ void EAMFrame::kraeam()
 	        _VIRIAL_IND[i].addnvv(-.5*fp,rij,rij);
 	        _VIRIAL_IND[jpt].addnvv(-.5*fp,rij,rij);
                 //_VIRIAL.addnvv(-fp,rij,rij);
+		assert(SURFTEN==0);
                 if (SURFTEN==1 && (curstep%savepropfreq)==1) AddnvvtoPtPn(_SR[jpt],rij,rij,-fp);
 #endif
         }
@@ -465,6 +466,9 @@ void EAMFrame::Alloc()
     Realloc(embf,double,size);
     Realloc(embfp,double,size);
     Realloc(nbst,int,size);
+#ifdef _USECUDA
+    cuda_memory_alloc();
+#endif
 }    
 
 /**********************************************************/
@@ -667,8 +671,14 @@ void EAMFrame::potential()
     refreshneighborlist(); // 2007.Jul.10 Chris Weinberger & Wei Cai
     if(pottype==1)
     {
+#ifdef _USECUDA
+        rhoeam_cuda();
+        kraeam_cuda();
+#else
         rhoeam();
         kraeam();
+#endif
+
     }
     else if(pottype==2)
     {
@@ -1093,6 +1103,10 @@ int EAMFrame::exec(const char *name)
 
 #ifdef _PARALLEL
     bindcommand(name,"Broadcast_EAM_Param",Broadcast_EAM_Param());
+#endif
+#ifdef _USECUDA
+    bindcommand(name,"test_saxpy",test_saxpy());
+    bindcommand(name,"cuda_memcpy_all",cuda_memcpy_all());
 #endif
     return -1;
 }

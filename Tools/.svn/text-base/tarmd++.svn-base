@@ -1,4 +1,0 @@
-d=`date +'%Y-%m-%d'`
-tar cvf md++-$d.tar MD++ --exclude MD++/Doc --exclude MD++/scripts/work --exclude MD++/cookies --exclude ".svn" --dereference
-gzip -9 md++-$d.tar
-

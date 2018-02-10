@@ -15,7 +15,7 @@ HDF5 = no
 OCTAVE = no
 GSL = no
 STRINGMETHOD = no
-CUDA = yes
+CUDA = no
 PY = no
 MPI = no
 RLIB = no
@@ -256,6 +256,13 @@ silica-bksmod: silica-bksmod.cpp mdparallel.o md.o $(LIBS)
 
 rods: rods.cpp mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS)
+	$(rshlib)
+
+eam_cuda.o: 
+#	nvcc  -c -gencode=arch=compute_61,code=sm_61 eam_cuda.cu
+	nvcc  -c -gencode=arch=compute_35,code=sm_35 eam_cuda.cu
+eamgpu: eam.cpp eam_cuda.o mdparallel.o md.o $(LIBS)
+	$(link) -D_TEST  $(XLIBS) -lcudart -lstdc++
 	$(rshlib)
 
 eam: eam.cpp mdparallel.o md.o $(LIBS)
@@ -526,3 +533,4 @@ vaspbox.o: display.h linalg3.h relax_zxcgr.h relax_prplus.h main.cpp
 xgeo.o: xgeo.h mdparallel.h md.h general.h organizer.h scparser.h filecls.h
 xgeo.o: display.h linalg3.h relax_zxcgr.h relax_prplus.h namecolor.c main.cpp
 fem_cuda.o: fem_cuda.cu linalg3_cu.h
+eam_cuda.o: eam_cuda.cu linalg3_cu.h

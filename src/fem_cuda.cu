@@ -269,6 +269,7 @@ void FEMFrame::cuda_snap_fem_energy_force() {
   DUMP("FEM");
   gpuErrchk( cudaMemcpy( _d_SR,        _SR,        _NP*sizeof(G_Vector3), cudaMemcpyHostToDevice));
   gpuErrchk( cudaMemcpy( _d_H_element, _H.element, 3*3*sizeof(double),    cudaMemcpyHostToDevice));
+  gpuErrchk( cudaMemcpy( _d_fixed,     fixed,      _NP*sizeof(int),       cudaMemcpyHostToDevice));
 
   _EPOT=0; //put this back
   for(int i=0;i<_NP;i++) {

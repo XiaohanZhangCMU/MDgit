@@ -1,9 +1,0 @@
-$meacard
-        ntypes=1,
-        enames(1)='Ga5'
-        kodes(1)='library'
-        legend=0.6
-        repuls(1,1)=0.097
-        cmin=27*1.4
- $
-
