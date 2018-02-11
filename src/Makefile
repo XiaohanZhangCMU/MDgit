@@ -532,5 +532,5 @@ vaspbox.o: mdparallel.h md.h general.h organizer.h scparser.h filecls.h
 vaspbox.o: display.h linalg3.h relax_zxcgr.h relax_prplus.h main.cpp
 xgeo.o: xgeo.h mdparallel.h md.h general.h organizer.h scparser.h filecls.h
 xgeo.o: display.h linalg3.h relax_zxcgr.h relax_prplus.h namecolor.c main.cpp
-fem_cuda.o: fem_cuda.cu linalg3_cu.h
-eam_cuda.o: eam_cuda.cu linalg3_cu.h
+fem_cuda.o: fem_cuda.cu linalg3_cu.h lock.h
+eam_cuda.o: eam_cuda.cu linalg3_cu.h lock.h

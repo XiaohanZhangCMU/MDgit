@@ -33,9 +33,9 @@ MD++ {
     latticestructure = face-centered-cubic
     latticeconst = 3.52 #(A) for Ni
     element0 = "Ni"
-    latticesize = [  1 -1  0  3    #(x)
-                     1  1  1  3    #(y)
-                    -1 -1  2  2  ] #(z)            
+    latticesize = [  1 -1  0  15    #(x)
+                     1  1  1  15    #(y)
+                    -1 -1  2  10  ] #(z)            
     #latticesize = [  1 -1  0  40    #(x)
     #                 1  1  1  40    #(y)
     #                -1 -1  2  20  ] #(z)            
@@ -698,8 +698,8 @@ if { $status == 0 } {
   if { $USEGPU == 1 } {
     MD++ cuda_memcpy_all
   }
-  MD++ eval
-  MD++ quit
+#  MD++ eval quit
+  MD++ conj_fevalmax = 10 relax eval quit
 
   make_screw_dipole 1
 

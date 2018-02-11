@@ -14,9 +14,9 @@
 
 #define _USECUDA
 #ifdef _USECUDA
-#define DEBUG_USECUDA
 #include <cuda_runtime.h>
 #include "linalg3_cu.h"
+#define DEBUG_USECUDA
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code,const char *file,int line,bool abort = true) {
   if (code != cudaSuccess) {
@@ -78,6 +78,7 @@ public:
 //                                    0     1      2      3       4       5       6     7        8      9
     double *fscalars;    /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
     double *_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+
 #endif
 
 #ifdef DEBUG_USECUDA

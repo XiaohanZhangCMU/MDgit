@@ -213,7 +213,12 @@ void EAMFrame::rhoeam()
             r2ij=rij.norm2();
             if(r2ij>actual2) continue;
             rmagg=sqrt(r2ij)-rmin;
-            
+#if 0
+ if (i >=10 && i <=20) { 
+	    printf("j = %d, _d_nn[%d]=%d, jpt = %d, ",j, i, nn[i], jpt);
+        printf("atom[%d], j=%d, r2ij=%e, d_rmin=%e, actual2 = %e\n",i,j, r2ij, rmin, actual2);
+ }
+#endif
             nbst[i]++;
             ind = (int)(rmagg/drar);
 
@@ -229,6 +234,11 @@ void EAMFrame::rhoeam()
             }
             qq=rmagg-rval[ind];
 
+#if 0
+ if (i >=10 && i <=20) { 
+      printf("atom[%d] qq=%e, rmagg=%e\n",i,qq, rmagg);
+ }
+#endif
             if(idx==jdx)
             {
 #ifndef _CUBICSPLINE
@@ -265,15 +275,16 @@ void EAMFrame::rhoeam()
               }
               rhotot[i]+=rhoi;
               rhotot[jpt]+=rhoj;
+
             }
         }
     }
 
     /* debug */
-#if 1
+#if 0
     for(i=0;i<_NP;i++)
     {
-        INFO_Printf("atom[%d] rhotot=%e\n",i,rhotot[i]);
+       INFO_Printf("atom[%d] rhotot=%e\n",i,rhotot[i]);
     }
 #endif
     
@@ -303,13 +314,15 @@ void EAMFrame::rhoeam()
         embf[i] = spline(frho_spline[idx],ind,qr);
         embfp[i] = spline1(frho_spline[idx],ind,qr);
 #endif
+	if (i <= 3)
+	printf("i = %d,embf[i]= %e,embfp[i]=%e\n", i, embf[i], embfp[i]);
         atpe3b[i] = embf[i];
         _EPOT_IND[i]+=atpe3b[i];
         _EPOT+=atpe3b[i];
     }    
 
     /* debug */
-#if 1
+#if 0
     for(i=0;i<_NP;i++)
     {
         INFO_Printf("atom[%d] embf=%e, _EPOT_IND=%e, _EPOT=%e\n",i,embf[i], _EPOT_IND[i], _EPOT);
@@ -416,6 +429,7 @@ void EAMFrame::kraeam()
             _EPOT_IND[i]+= 0.5*pp;
             _EPOT_IND[jpt]+= 0.5*pp;
             _EPOT+=pp;
+//        printf("atom[%d], j =%d, pp=%e\n",i,j, pp);
             
             fij=rij*fp;
             _F[i]+=fij;
@@ -429,12 +443,41 @@ void EAMFrame::kraeam()
 	        _VIRIAL_IND[i].addnvv(-.5*fp,rij,rij);
 	        _VIRIAL_IND[jpt].addnvv(-.5*fp,rij,rij);
                 //_VIRIAL.addnvv(-fp,rij,rij);
+		
+#if 0
+		if (i == 0) { 
+			printf("i = %d, j =%d\n", i, j);
+	    for(int I = 0;I<3;I++) {
+	      for(int J = 0;J<3;J++){
+	        printf("_VIRIAL_i[%d][%d]=%e ",I,J, _VIRIAL_IND[i][I][J]); 
+	      }
+	      printf("\n");
+	    }
+
+	    for(int I = 0;I<3;I++) {
+	      for(int J = 0;J<3;J++){
+	        printf("_VIRIAL_jpt[%d][%d]=%e ",I,J, _VIRIAL_IND[jpt][I][J]); 
+	      }
+	      printf("\n");
+	    }
+	    }
+#endif
 		assert(SURFTEN==0);
                 if (SURFTEN==1 && (curstep%savepropfreq)==1) AddnvvtoPtPn(_SR[jpt],rij,rij,-fp);
 #endif
         }
         _VIRIAL+=_VIRIAL_IND[i];
+
     }
+    
+    /* debug */
+#if 1
+    for(i=0;i<_NP;i++)
+    {
+        INFO_Printf("atom[%d] _F=%e,%e,%e, _EPOT_IND=%e, _EPOT=%e\n",i,_F[i].x, _F[i].y, _F[i].z, _EPOT_IND[i], _EPOT);
+    }
+#endif
+
 }
 #endif
 

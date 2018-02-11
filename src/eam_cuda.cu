@@ -16,6 +16,8 @@
  */
 
 #include "eam.h"
+#include "lock.h"
+
 #define EQIV(a, b) (abs((a)-(b))<1e-15?1:0)
 
 void EAMFrame::cuda_memory_alloc() {
@@ -68,6 +70,7 @@ void EAMFrame::cuda_memory_alloc() {
   Realloc(    _h_d_embf,      double, size   );
   Realloc(    _h_d_embfp,     double, size   );
   Realloc(    _h_d_nbst,      int,    size   );
+  Realloc(    _h_d_EPOT_IND,  double, size   );
 
   /* Alloc runtime cpu data to device */
   int shft1=_NP*_NNM*sizeof(int);
@@ -110,26 +113,10 @@ void EAMFrame::cuda_memcpy_all() {
   gpuErrchk(cudaMemcpy(_d_rval,        rval,        sizeof(double)*NGRID,     cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_rhoval,      rhoval,      sizeof(double)*NGRID,     cudaMemcpyHostToDevice));
   
-  //NbrList_reconstruct_use_link_list();
-  //NbrList_init(size,_NNM);
-  /* initial copy of runtime cpu data to device */
-//int* A = new int[_NP * _NNM];
-//for (int i = 0; i < _NP; ++i) {
-// for (int j = 0; j < _NNM; ++j) {
-//	 printf("i = %d, j = %d, nindex = %d\n", i, j, nindex[i][j]);
-//   A[i*_NNM+j] = nindex[i][j];
-//    }
-//} 
-//int *dA;
-//cudaMalloc(&dA, sizeof(int) * _NP * _NNM);
-
-// copy host memory to device (pointing at A[0])
-//cudaMemcpy(dA, A, sizeof(int) * _NP * _NNM, cudaMemcpyHostToDevice);  
-
-//for(int i = 0;i<size;i++)
   NbrList_refresh();
-  gpuErrchk(cudaMemcpy(_d_nindex,   nindex[0],   sizeof(int)*size*_NNM,    cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(_d_nindex,   nindex[0],      sizeof(int)*size*_NNM,    cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_nn,          nn,          sizeof(int)*size,         cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(_d_species,     species,     sizeof(int)*size,         cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_SR,          _SR,         sizeof(G_Vector3)*size,   cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_F,           _F,          sizeof(G_Vector3)*size,   cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_VIRIAL_IND_element, _VIRIAL_IND[0].element,sizeof(double)*9*size, cudaMemcpyHostToDevice));
@@ -146,6 +133,7 @@ void EAMFrame::cuda_memcpy_all() {
   fscalars[9]=rhomax ;
   gpuErrchk(cudaMemcpy(_d_fscalars,    fscalars,    sizeof(double)*10,        cudaMemcpyHostToDevice));
 }
+
 
 __device__ double spline(double* _d_spline_coeff,int ind, double qq)
 {
@@ -170,7 +158,37 @@ __device__ double spline1(double* _d_spline_coeff,int ind, double qq)
   return fp;
 }
 
-__global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
+
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+
+#else
+__device__ double atomicAdd(double* address, double val)
+{
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed,
+    __double_as_longlong(val + __longlong_as_double(assumed)));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+} 
+#endif
+
+ __device__ void atomicAddnvv(double* address, double n,G_Vector3 &a,G_Vector3 &b)
+    {
+        atomicAdd(address+0,n*a.x*b.x);
+        atomicAdd(address+1,n*a.x*b.y);
+        atomicAdd(address+2,n*a.x*b.z);
+        atomicAdd(address+3,n*a.y*b.x);
+        atomicAdd(address+4,n*a.y*b.y);
+        atomicAdd(address+5,n*a.y*b.z);
+        atomicAdd(address+6,n*a.z*b.x);
+        atomicAdd(address+7,n*a.z*b.y);
+        atomicAdd(address+8,n*a.z*b.z);
+    }
+
+__global__ void kernel_rhoeam_0(int _NP, int _NNM, int eamfiletype, int eamgrid,
                               double *_d_rho,double *_d_rhop,double *_d_phi,double *_d_phip,
                               double *_d_phix,double *_d_phipx,
                               double *_d_frho,double *_d_frhop,
@@ -199,7 +217,6 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
     G_Vector3 sij,rij;
     double r2ij, rmagg, qq, qr;
     double rhoi, rhoj;
-    G_Matrix33 _d_VIRIAL(_d_VIRIAL_element);
     G_Matrix33 _d_H(_d_H_element);
 
     //double _d_rmass   = _d_fscalars[0];
@@ -213,25 +230,81 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
     double _d_rhocon  = _d_fscalars[8];
     double _d_rhomax  = _d_fscalars[9];
 
-    for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
-    {
         /*INFO("rhoeam");*/
         _d_petrip = 0.0;
         //rhocon = 1e-10;
         _d_rhocon = 0.0;            /* replaced by Keonwook Kang, Apr 29, 2011 */
         _d_rhomax = eamgrid*_d_drhoar; 
 
+    for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
+    {
         _d_atpe3b[i]=0;
         _d_rhotot[i]=0;
         _d_nbst[i]=0;
+     }
 
+    for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
+    {
         _d_F[i].clear(); _d_EPOT_IND[i]=0;
 	for(l = 0; l<9; l++) {
 	  _d_VIRIAL_IND_element[i*9+l] = 0; 
 	  _d_VIRIAL_IND_element_padding[i*9+l] = 0;
 	 }
         _d_EPOT[i]=0;
-        _d_VIRIAL.clear();
+    }
+}
+
+
+__global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
+                              double *_d_rho,double *_d_rhop,double *_d_phi,double *_d_phip,
+                              double *_d_phix,double *_d_phipx,
+                              double *_d_frho,double *_d_frhop,
+                              double *_d_rho_spline, double *_d_phi_spline,
+                              double *_d_phix_spline,double *_d_frho_spline,
+                              double *_d_rval,double *_d_rhoval,
+                              double *_d_atpe3b,double *_d_rhotot, double *_d_embf, double *_d_embfp,
+			      double *_d_rhotot_padding,
+			      int    *_d_nbst,
+                              double *_d_EPOT,
+                              double *_d_H_element,
+                              double *_d_VIRIAL_element,
+                              double *_d_EPOT_IND,
+                              double *_d_EPOT_IND_padding,
+                              int *_d_species,
+                              int *_d_nindex,
+                              int *_d_nn,
+                              G_Vector3 *_d_SR,
+                              G_Vector3 *_d_F,
+                              G_Vector3 *_d_F_padding,
+                              double * _d_VIRIAL_IND_element,
+                              double * _d_VIRIAL_IND_element_padding,
+                              double *_d_fscalars)
+{
+    int i, j, l, jpt, idx, jdx, ind;
+    G_Vector3 sij,rij;
+    double r2ij, rmagg, qq, qr;
+    double rhoi, rhoj;
+    G_Matrix33 _d_H(_d_H_element);
+
+    //double _d_rmass   = _d_fscalars[0];
+    //double _d_rlatt   = _d_fscalars[1];
+    double _d_drar    = _d_fscalars[2];
+    double _d_drhoar  = _d_fscalars[3];
+    //double _d_actual  = _d_fscalars[4];
+    double _d_actual2 = _d_fscalars[5];
+    double _d_rmin    = _d_fscalars[6];
+    double _d_petrip  = _d_fscalars[7];
+    double _d_rhocon  = _d_fscalars[8];
+    double _d_rhomax  = _d_fscalars[9];
+
+        /*INFO("rhoeam");*/
+        _d_petrip = 0.0;
+        //rhocon = 1e-10;
+        _d_rhocon = 0.0;            /* replaced by Keonwook Kang, Apr 29, 2011 */
+        _d_rhomax = eamgrid*_d_drhoar; 
+
+    for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
+    {
     
         /* modify here for binary systems (0/1) */
         idx = _d_species[i]; /* type of atom (i) */
@@ -239,8 +312,7 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
         for(j=0;j<_d_nn[i];j++)
         {
             /* modify here for binary systems (0/1) */
-//          jpt=_d_nindex[i*_NNM+j];
-            jpt=i*_NNM+j; 
+            jpt=_d_nindex[i*_NNM+j];
             jdx = _d_species[jpt]; /* type of atom (j) */
             if(i>=jpt) continue;
             sij=_d_SR[jpt]-_d_SR[i];
@@ -249,7 +321,7 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
             r2ij=rij.norm2();
             if(r2ij>_d_actual2) continue;
             rmagg=sqrt(r2ij)-_d_rmin;
-            
+
             _d_nbst[i]++;
             ind = (int)(rmagg/_d_drar);
 
@@ -273,8 +345,8 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
             //rhoi = interp(rho[jdx],rhop[jdx],drar,ind,qq);
             rhoi = spline(_d_rho_spline[jdx],ind,qq);
 #endif
-            _d_rhotot[i]+=rhoi;
-            _d_rhotot_padding[jpt]+=rhoi;
+	    atomicAdd(_d_rhotot+i, rhoi);
+	    atomicAdd(_d_rhotot+jpt, rhoi);
             }
             else
             {
@@ -299,11 +371,63 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
               rhoj = spline(_d_rho_spline[(jdx+2)*NGRID*4],ind,qq);
 #endif
               }
-              _d_rhotot[i]+=rhoi;
-              _d_rhotot_padding[jpt]+=rhoj;
+	      atomicAdd(_d_rhotot+i, rhoi);
+	      atomicAdd(_d_rhotot+jpt, rhoj);
             }
         }
     }
+
+}
+
+
+__global__ void kernel_rhoeam_2(int _NP, int _NNM, int eamfiletype, int eamgrid,
+                              double *_d_rho,double *_d_rhop,double *_d_phi,double *_d_phip,
+                              double *_d_phix,double *_d_phipx,
+                              double *_d_frho,double *_d_frhop,
+                              double *_d_rho_spline, double *_d_phi_spline,
+                              double *_d_phix_spline,double *_d_frho_spline,
+                              double *_d_rval,double *_d_rhoval,
+                              double *_d_atpe3b,double *_d_rhotot, double *_d_embf, double *_d_embfp,
+			      double *_d_rhotot_padding,
+			      int    *_d_nbst,
+                              double *_d_EPOT,
+                              double *_d_H_element,
+                              double *_d_VIRIAL_element,
+                              double *_d_EPOT_IND,
+                              double *_d_EPOT_IND_padding,
+                              int *_d_species,
+                              int *_d_nindex,
+                              int *_d_nn,
+                              G_Vector3 *_d_SR,
+                              G_Vector3 *_d_F,
+                              G_Vector3 *_d_F_padding,
+                              double * _d_VIRIAL_IND_element,
+                              double * _d_VIRIAL_IND_element_padding,
+                              double *_d_fscalars)
+{
+    int i, j, l, jpt, idx, jdx, ind;
+    G_Vector3 sij,rij;
+    double r2ij, rmagg, qq, qr;
+    double rhoi, rhoj;
+    G_Matrix33 _d_H(_d_H_element);
+
+    //double _d_rmass   = _d_fscalars[0];
+    //double _d_rlatt   = _d_fscalars[1];
+    double _d_drar    = _d_fscalars[2];
+    double _d_drhoar  = _d_fscalars[3];
+    //double _d_actual  = _d_fscalars[4];
+    double _d_actual2 = _d_fscalars[5];
+    double _d_rmin    = _d_fscalars[6];
+    double _d_petrip  = _d_fscalars[7];
+    double _d_rhocon  = _d_fscalars[8];
+    double _d_rhomax  = _d_fscalars[9];
+
+        /*INFO("rhoeam");*/
+        _d_petrip = 0.0;
+        //rhocon = 1e-10;
+        _d_rhocon = 0.0;            /* replaced by Keonwook Kang, Apr 29, 2011 */
+        _d_rhomax = eamgrid*_d_drhoar; 
+
 
     for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
     {
@@ -331,26 +455,29 @@ __global__ void kernel_rhoeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
         _d_embf[i] = spline(_d_frho_spline[idx*4*NGRID],ind,qr);
         _d_embfp[i] = spline1(_d_frho_spline[idx*4*NGRID],ind,qr);
 #endif
+	if (i <= 3)
+	printf("i = %d, _d_embf[i]= %e, _d_embfp[i]=%e\n", i, _d_embf[i], _d_embfp[i]);
+
         _d_atpe3b[i] = _d_embf[i];
         _d_EPOT_IND[i]+=_d_atpe3b[i];
         _d_EPOT[i]+=_d_atpe3b[i];
-    /* debug */
-#if 1
-        printf("atom[%d] embf=%e, _d_EPOT=%e\n",i,_d_embf[i], _d_EPOT[i]);
-#endif
-
     }    
-
 }
+
+
+
 
 void EAMFrame::rhoeam_cuda() {
   gpuErrchk(cudaMemcpy(_d_SR,_SR,_NP*sizeof(G_Vector3), cudaMemcpyHostToDevice));
   gpuErrchk(cudaMemcpy(_d_H_element,_H.element,9*sizeof(double),cudaMemcpyHostToDevice));
+  _EPOT = 0;
+  _VIRIAL.clear();
 
 #ifdef DEBUG_USECUDA
-  assert(check_host_device_memory_transfer() == 0);
+//  assert(check_host_device_memory_transfer() == 0);
 #endif
-  kernel_rhoeam<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  kernel_rhoeam_0<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  //kernel_rhoeam_1<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix,_d_phipx,
                            _d_frho,_d_frhop,
@@ -375,9 +502,92 @@ void EAMFrame::rhoeam_cuda() {
                            _d_VIRIAL_IND_element_padding,
                            _d_fscalars);
 
+  kernel_rhoeam_1<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  //kernel_rhoeam_1<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
+                           _d_rho, _d_rhop, _d_phi, _d_phip,
+                           _d_phix,_d_phipx,
+                           _d_frho,_d_frhop,
+                           _d_rho_spline, _d_phi_spline,
+                           _d_phix_spline,_d_frho_spline,
+                           _d_rval,_d_rhoval,
+                           _d_atpe3b,_d_rhotot, _d_embf,_d_embfp,
+			   _d_rhotot_padding,
+			   _d_nbst,
+                           _d_EPOT,
+                           _d_H_element,
+                           _d_VIRIAL_element,
+                           _d_EPOT_IND,
+			   _d_EPOT_IND_padding,
+                           _d_species,
+                           _d_nindex,
+                           _d_nn,
+                           _d_SR,
+                           _d_F,
+                           _d_F_padding,
+                           _d_VIRIAL_IND_element,
+                           _d_VIRIAL_IND_element_padding,
+                           _d_fscalars);
+/* debug */
+#if 0 //def DEBUG_USECUDA
+  gpuErrchk(cudaMemcpy(_h_d_rhotot,_d_rhotot, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  for(int i = 0;i<_NP;i++)
+    printf("atom[%d] rhotot=%e\n",i,_h_d_rhotot[i]);
+#endif
+
+  kernel_rhoeam_2<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  //kernel_rhoeam_2<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
+                           _d_rho, _d_rhop, _d_phi, _d_phip,
+                           _d_phix,_d_phipx,
+                           _d_frho,_d_frhop,
+                           _d_rho_spline, _d_phi_spline,
+                           _d_phix_spline,_d_frho_spline,
+                           _d_rval,_d_rhoval,
+                           _d_atpe3b,_d_rhotot, _d_embf,_d_embfp,
+			   _d_rhotot_padding,
+			   _d_nbst,
+                           _d_EPOT,
+                           _d_H_element,
+                           _d_VIRIAL_element,
+                           _d_EPOT_IND,
+			   _d_EPOT_IND_padding,
+                           _d_species,
+                           _d_nindex,
+                           _d_nn,
+                           _d_SR,
+                           _d_F,
+                           _d_F_padding,
+                           _d_VIRIAL_IND_element,
+                           _d_VIRIAL_IND_element_padding,
+                           _d_fscalars);
+
+    /* debug */
+#if 0
+  gpuErrchk(cudaMemcpy(_h_d_embf,_d_embf, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(_h_d_EPOT_IND,_d_EPOT_IND, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  for (int i = 0;i<_NP;i++)
+        printf("atom[%d] embf=%e, _d_EPOT=%e\n",i,_h_d_embf[i], _h_d_EPOT_IND[i]);
+#endif
+
+#if 0
+#if 1
+  double *_h_EPOT = 0;        /* used for host reduction only */
+  Realloc( _h_EPOT,          double,     _NP);
+  gpuErrchk(cudaMemcpy(_h_EPOT,_d_EPOT, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(_VIRIAL_IND[0].element,_d_VIRIAL_IND_element, _NP*9*sizeof(double), cudaMemcpyDeviceToHost));
+  for (int i = 0; i<_NP; i++) {// printf("_h_EPOT[%d]= %g\n", i,_h_EPOT[i]);
+	  _EPOT += _h_EPOT[i]; } 
+  for (int i = 0; i<_NP; i++) { 
+	  _VIRIAL += _VIRIAL_IND[i];
+  }
+  /* Copy force (Vector3 *) back to CPU for relax function to call */ 
+  cudaMemcpy(_F, _d_F, _NP*sizeof(G_Vector3), cudaMemcpyDeviceToHost);
+#else
   thrust::device_ptr<double> t_EPOT = thrust::device_pointer_cast(_d_EPOT);
-  _EPOT = thrust::reduce(t_EPOT,t_EPOT+_NP); 
+  _EPOT += thrust::reduce(t_EPOT,t_EPOT+_NP); 
+#endif
   INFO_Printf("I am here 2.0, _EPOT = %g \n", _EPOT);
+#endif
+
 }
 
 __global__ void kernel_assemble_back_force(int _NP, int _NNM, int *_d_nn,int *_d_nindex,G_Vector3 *_d_F,G_Vector3 *_d_F_padding, double* _d_VIRIAL_IND_element, double* _d_VIRIAL_IND_element_padding) { 
@@ -441,8 +651,6 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
     /* do on i-particles */
     for(i=blockDim.x*blockIdx.x+threadIdx.x;i<_NP;i+=blockDim.x*gridDim.x)
     {
-	 G_Matrix33 _d_VIRIAL_IND_i(_d_VIRIAL_IND_element+i*9);
-
         /* modify here for binary systems (0/1) */
         idx = _d_species[i]; /* type of atom (i) */
         /* do on j-particles */
@@ -450,8 +658,6 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
         {
             /* modify here for binary systems (0/1) */
             jpt=_d_nindex[i*_NNM+j];
-	    G_Matrix33 _d_VIRIAL_IND_jpt(_d_VIRIAL_IND_element+jpt*9);
-
             jdx = _d_species[jpt]; /* type of atom (j) */
             if(i>=jpt) continue;
             sij=_d_SR[jpt]-_d_SR[i];
@@ -528,40 +734,36 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 
             fcp = denspj * _d_embfp[i] + denspi * _d_embfp[jpt];
             fp = (fpp + fcp) / (rmagg+_d_rmin);
-            _d_EPOT_IND[i]+= 0.5*pp;
-            _d_EPOT_IND[jpt]+= 0.5*pp;
-            _d_EPOT[i]+=pp;
+            
+	    atomicAdd(_d_EPOT_IND+i, 0.5*pp);
+	    atomicAdd(_d_EPOT_IND+jpt, 0.5*pp);
+	    atomicAdd(_d_EPOT+i, pp);
             
             fij=rij*fp;
-            _d_F[i]+=fij;
-            _d_F_padding[jpt]-=fij;
-#if 0
-            if(!(fixed[i]||fixed[jpt]))
-                _VIRIAL.addnvv(-fp,rij,rij);
-            else if(!(fixed[i]&&fixed[jpt]))
-                _VIRIAL.addnvv(-0.5*fp,rij,rij);
-#else
-	    _d_VIRIAL_IND_i.addnvv(-.5*fp,rij,rij);
-	    _d_VIRIAL_IND_jpt.addnvv(-.5*fp,rij,rij);
+//????????????????????????????????????????????????
+	    atomicAdd(&(_d_F[i].x),fij[0]);
+	    atomicAdd(&(_d_F[i].y),fij[1]);
+	    atomicAdd(&(_d_F[i].z),fij[2]);
+	    atomicAdd(&(_d_F[jpt].x),-fij[0]);
+	    atomicAdd(&(_d_F[jpt].y),-fij[1]);
+	    atomicAdd(&(_d_F[jpt].z),-fij[2]);
+
+//????????????????????????????????????????????????
+	    atomicAddnvv(_d_VIRIAL_IND_element+i*9,-.5*fp,rij,rij);
+	    atomicAddnvv(_d_VIRIAL_IND_element+jpt*9,-.5*fp,rij,rij);
+
             //_VIRIAL.addnvv(-fp,rij,rij);
             //assert(SURFTEN==0);
 #if 0
             if (SURFTEN==1 && (curstep%savepropfreq)==1) AddnvvtoPtPn(_SR[jpt],rij,rij,-fp);
 #endif
-#endif
-	    for(l = 0; l<3; l++)  for(m = 0; m<3; m++) {//????????????? 
-	      _d_VIRIAL_IND_element[i*9+l*3+m] = _d_VIRIAL_IND_i[l][m]; 
-      _d_VIRIAL_IND_element_padding[jpt*9+l*3+m]=_d_VIRIAL_IND_jpt[l][m]; 
-	    }
         }
-        _d_VIRIAL+=_d_VIRIAL_IND_i;
     }
-
-    for(l = 0; l<3; l++) for (m = 0;m<3; m++)
-      _d_VIRIAL_element[l*3+m] = _d_VIRIAL[l][m];
 }
 
 void EAMFrame::kraeam_cuda() {
+#if 1
+  //kernel_kraeam<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
   kernel_kraeam<<< 1,1 >>>(_NP,  _NNM, eamfiletype,  eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix, _d_phipx,
@@ -585,14 +787,31 @@ void EAMFrame::kraeam_cuda() {
                            _d_VIRIAL_IND_element_padding,
                            _d_fscalars);
 
-  kernel_assemble_back_force<<<1,1>>>(_NP, _NNM, _d_nn, _d_nindex, _d_F, _d_F_padding, _d_VIRIAL_IND_element, _d_VIRIAL_IND_element_padding);
-
-  thrust::device_ptr<double> t_EPOT = thrust::device_pointer_cast(_d_EPOT);
-  _EPOT = thrust::reduce(t_EPOT,t_EPOT+_NP); 
-  INFO_Printf("I am here 2, _EPOT = %g \n", _EPOT);
-
+//  kernel_assemble_back_force<<<1,1>>>(_NP, _NNM, _d_nn, _d_nindex, _d_F, _d_F_padding, _d_VIRIAL_IND_element, _d_VIRIAL_IND_element_padding);
+#if 1
+  double *_h_EPOT = 0;        /* used for host reduction only */
+  Realloc( _h_EPOT,          double,     _NP);
+  gpuErrchk(cudaMemcpy(_EPOT_IND,_d_EPOT_IND, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(_VIRIAL_IND[0].element,_d_VIRIAL_IND_element, _NP*9*sizeof(double), cudaMemcpyDeviceToHost));
+  for (int i = 0; i<_NP; i++) { //printf("_h_EPOT[%d]= %g\n", i,_h_EPOT[i]);
+	  _EPOT += _EPOT_IND[i]; } 
+  for (int i = 0; i<_NP; i++) { 
+	  _VIRIAL += _VIRIAL_IND[i];
+  }
   /* Copy force (Vector3 *) back to CPU for relax function to call */ 
   cudaMemcpy(_F, _d_F, _NP*sizeof(G_Vector3), cudaMemcpyDeviceToHost);
+  for(int i=0;i<_NP;i++)
+    {
+        INFO_Printf("atom[%d] _F=%e,%e,%e, _EPOT_IND=%e, _EPOT=%e\n",i,_F[i].x, _F[i].y, _F[i].z, _EPOT_IND[i], _EPOT);
+    }
+
+#else
+  thrust::device_ptr<double> t_EPOT = thrust::device_pointer_cast(_d_EPOT);
+  INFO_Printf("I am here 5.0, _EPOT = %g \n", _EPOT);
+  _EPOT += thrust::reduce(t_EPOT,t_EPOT+_NP); 
+#endif
+  INFO_Printf("I am here 2, _EPOT = %g \n", _EPOT);
+#endif
 }
 
 #ifdef DEBUG_USECUDA
