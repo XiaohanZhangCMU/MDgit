@@ -699,7 +699,7 @@ if { $status == 0 } {
     MD++ cuda_memcpy_all
   }
 #  MD++ eval quit
-  MD++ conj_fevalmax = 10 relax eval quit
+  MD++ conj_fevalmax = 1 relax eval quit
 
   make_screw_dipole 1
 

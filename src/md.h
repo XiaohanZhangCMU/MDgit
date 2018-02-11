@@ -792,6 +792,7 @@ public:
     int coloratoms;                 /* determine how to color atoms 
 				   0 = color by species, 1 = color by groups */
 
+    int mesg2cuda_nbr_refreshed;
     /* Constructor (set initial values of member variables) */
     MDFrame(): _SAVEMEMORY(0),_NP(0),_NP0(0),_NIMAGES(0),_NPfree(0),_NPfixed(0),
 
@@ -1003,6 +1004,8 @@ public:
                /* Interface to MDCASK */
                initmdcaskcon(AUXFile::BLOCK),finalmdcaskcon(AUXFile::BLOCK),
                initmdcaskinput(AUXFile::BLOCK),finalmdcaskinput(AUXFile::BLOCK),
+	       /* Cuda message */
+               mesg2cuda_nbr_refreshed(0),
 
                /* Visualization */
                win(0),win_width(350),win_height(350),

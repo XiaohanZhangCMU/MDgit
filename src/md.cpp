@@ -12839,7 +12839,8 @@ void MDFrame::NbrList_freecell()
 
 void MDFrame::NbrList_refresh()
 {
-    if(NbrList_needrefresh()) NbrList_reconstruct();
+    if(NbrList_needrefresh()) 
+    { mesg2cuda_nbr_refreshed = 1; NbrList_reconstruct(); }
 }
 
 void MDFrame::NbrListPlot_reconstruct()

@@ -429,7 +429,9 @@ void EAMFrame::kraeam()
             _EPOT_IND[i]+= 0.5*pp;
             _EPOT_IND[jpt]+= 0.5*pp;
             _EPOT+=pp;
-//        printf("atom[%d], j =%d, pp=%e\n",i,j, pp);
+
+	    if (i <=2)
+        printf("atom[%d], j =%d, jpt = %d, fpp=%e, qq=%e, rhop[idx*NGRID+ind]=%e, embfp[jpt]=%e \n",i,j,jpt, fpp, qq, rhop[idx][ind], embfp[jpt]);
             
             fij=rij*fp;
             _F[i]+=fij;
@@ -471,7 +473,7 @@ void EAMFrame::kraeam()
     }
     
     /* debug */
-#if 1
+#if 0
     for(i=0;i<_NP;i++)
     {
         INFO_Printf("atom[%d] _F=%e,%e,%e, _EPOT_IND=%e, _EPOT=%e\n",i,_F[i].x, _F[i].y, _F[i].z, _EPOT_IND[i], _EPOT);
@@ -1285,7 +1287,6 @@ void EAMFrame::Broadcast_EAM_Param()
          frho_spline[1][i][j] = buf_double[(i*4+j)*7 + noffset2 + 5];
          phix_spline[i][j]    = buf_double[(i*4+j)*7 + noffset2 + 6];
       }
-
     }
     
     free(buf_double);
@@ -1309,103 +1310,3 @@ class EAMFrame sim;
 
 #endif//_TEST
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* old code */
-#if 0
-
-inline double interp(double func[],double deriv[],double dr,int ind,double qq)
-{
-    double f, a, b, c, d, f1, p1, A1, A2, dr2, dr3, qq2, qq3;
-//    f = func[ind] + qq*deriv[ind];
-    dr2=dr*dr; dr3=dr2*dr;
-    qq2=qq*qq; qq3=qq2*qq;
-    a = func[ind];
-    b = deriv[ind];
-    f1 = func[ind+1];
-    p1 = deriv[ind+1];
-    A1 = f1-a-b*dr;
-    A2 = (p1-b)*dr;
-    d = (A2-2*A1)/dr3;
-    c = (3*A1-A2)/dr2;
-    f=a+b*qq+c*qq2+d*qq3;
-    return f;
-}
-    
-    
-inline double interp1(double func[],double deriv[],double dr,int ind,double qq)
-{
-    double fp, a, b, c, d, f1, p1, A1, A2, dr2, dr3, qq2, qq3;
-//    fp = deriv[ind] + qq1/dr*(deriv[ind+1]-deriv[ind]);
-    dr2=dr*dr; dr3=dr2*dr;
-    qq2=qq*qq; qq3=qq2*qq;
-    a = func[ind];
-    b = deriv[ind];
-    f1 = func[ind+1];
-    p1 = deriv[ind+1];
-    A1 = f1-a-b*dr;
-    A2 = (p1-b)*dr;
-    d = (A2-2*A1)/dr3;
-    c = (3*A1-A2)/dr2;
-    fp=b+2*c*qq+3*d*qq2;
-    return fp;
-}
-#endif

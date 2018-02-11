@@ -58,27 +58,23 @@ public:
     double *_d_phix_spline, *_d_frho_spline;
     double *_d_rval, *_d_rhoval;
     double *_d_atpe3b, *_d_rhotot, *_d_embf, *_d_embfp;
-    double *_d_rhotot_padding;
     int *_d_nbst;
 
-    double *_d_EPOT;
     double *_d_H_element;
     double *_d_VIRIAL_element;
     double *_d_VIRIAL_IND_element;
-    double *_d_VIRIAL_IND_element_padding;
     double *_d_EPOT_IND;
-    double *_d_EPOT_IND_padding;
     int *_d_fixed;
     int *_d_species;
     int *_d_nindex;
     int *_d_nn;
     G_Vector3 *_d_SR;
     G_Vector3 *_d_F;
-    G_Vector3 *_d_F_padding;
-//                                    0     1      2      3       4       5       6     7        8      9
-    double *fscalars;    /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
-    double *_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
-
+    /* order:
+     *  0     1     2     3      4      5      6     7      8      9 
+     * rmass,rlatt,drar,drhoar,actual,actual2,rmin,petrip,rhocon,rhomax
+     */
+    double *fscalars, *_d_fscalars;  
 #endif
 
 #ifdef DEBUG_USECUDA
@@ -91,8 +87,6 @@ public:
 
     double *_h_d_atpe3b, *_h_d_rhotot, *_h_d_embf, *_h_d_embfp;
     int *_h_d_nbst;
-
-    double *_h_d_EPOT;
     Matrix33 _h_d_H;
     Matrix33 _h_d_VIRIAL;
     Matrix33 *_h_d_VIRIAL_IND;
@@ -102,9 +96,7 @@ public:
     int *_h_d_nn;
     Vector3 *_h_d_SR;
     Vector3 *_h_d_F;
-    Vector3 *_h_d_F_padding;
-//                                  0     1      2      3       4       5       6     7        8      9
-    double *_h_d_fscalars; /* order: rmass, rlatt, drar, drhoar, actual, actual2, rmin, petrip, rhocon, rhomax */
+    double *_h_d_fscalars;
     int check_host_device_memory_transfer(); 
 #endif
    
@@ -167,7 +159,6 @@ public:
     void Broadcast_EAM_Param();
 #endif
 };
-
 
 #endif // _EAM_H
 
