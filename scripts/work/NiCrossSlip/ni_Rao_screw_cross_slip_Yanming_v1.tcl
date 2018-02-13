@@ -33,9 +33,9 @@ MD++ {
     latticestructure = face-centered-cubic
     latticeconst = 3.52 #(A) for Ni
     element0 = "Ni"
-    latticesize = [  1 -1  0  15    #(x)
-                     1  1  1  15    #(y)
-                    -1 -1  2  10  ] #(z)            
+    latticesize = [  1 -1  0  30    #(x)
+                     1  1  1  30    #(y)
+                    -1 -1  2  20  ] #(z)            
     #latticesize = [  1 -1  0  40    #(x)
     #                 1  1  1  40    #(y)
     #                -1 -1  2  20  ] #(z)            
@@ -686,8 +686,23 @@ if { [ string match "*eamcpu*" $myname ] } {
 if { $USEGPU == 1 } {
   MD++ test_saxpy
 }
+if { $status == -1 } {
+  MD++ setnolog
+  initmd $status
+  readpot
 
-if { $status == 0 } {
+  make_perfect_crystal 
+
+  MD++ input = \[ 1 1 2 \] changeH_keepR
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
+#  MD++ eval quit
+  MD++ conj_fevalmax = 100 relax eval quit
+
+
+
+} elseif { $status == 0 } {
   # prepare and relax dislocation structure on glide plane
   MD++ setnolog
   initmd $status
@@ -695,14 +710,8 @@ if { $status == 0 } {
 
   make_perfect_crystal 
 
-  if { $USEGPU == 1 } {
-    MD++ cuda_memcpy_all
-  }
-#  MD++ eval quit
-  MD++ conj_fevalmax = 1 relax eval quit
 
   make_screw_dipole 1
-
   make_glide_partials 0
   #make_cross_partials 0
   #make_cross_slip 0

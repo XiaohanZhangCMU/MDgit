@@ -16,6 +16,8 @@
  */
 
 #include "eam.h"
+#define _CUBICSPLINE
+#define NTHREADS 32
 
 #define EQIV(a, b) (abs((a)-(b))<1e-15?1:0)
 
@@ -295,10 +297,18 @@ __global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
             rhoi=_d_rho[jdx*NGRID+ind]+ qq*_d_rhop[jdx*NGRID+ind];
 #else
             //rhoi = interp(rho[jdx],rhop[jdx],drar,ind,qq);
-            rhoi = spline(_d_rho_spline[jdx],ind,qq);
+            rhoi = spline(_d_rho_spline+jdx*NGRID*4,ind,qq);
+#endif
+#if 0
+	    if (i < -10)
+	    printf("Before: i=%d, j = %d, ind = %d, rhoi = %e, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, rhoi, i, _d_rhotot[i], jpt, _d_rhotot[jpt]);
 #endif
 	    atomicAdd(_d_rhotot+i, rhoi);
 	    atomicAdd(_d_rhotot+jpt, rhoi);
+#if 0
+	    if (i < -10)
+	    printf("After: i=%d, j = %d, ind = %d, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, i, _d_rhotot[i], jpt, _d_rhotot[jpt]);
+#endif
             }
             else
             {
@@ -310,8 +320,8 @@ __global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
 #else
               //rhoi = interp(rho[jdx],rhop[jdx],drar,ind,qq);
               //rhoj = interp(rho[idx],rhop[idx],drar,ind,qq);
-              rhoi = spline(_d_rho_spline[jdx*NGRID*4],ind,qq);
-              rhoj = spline(_d_rho_spline[idx*NGRID*4],ind,qq);
+              rhoi = spline(_d_rho_spline+jdx*NGRID*4,ind,qq);
+              rhoj = spline(_d_rho_spline+idx*NGRID*4,ind,qq);
 #endif
               } else if (eamfiletype == 4)
               {
@@ -319,8 +329,8 @@ __global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
               rhoi=_d_rho[(idx+2)*NGRID+ind]+ qq*_d_rhop[(idx+2)*NGRID+ind];
               rhoj=_d_rho[(jdx+2)*NGRID+ind]+ qq*_d_rhop[(jdx+2)*NGRID+ind];
 #else
-              rhoi = spline(_d_rho_spline[(idx+2)*NGRID*4],ind,qq);
-              rhoj = spline(_d_rho_spline[(jdx+2)*NGRID*4],ind,qq);
+              rhoi = spline(_d_rho_spline+(idx+2)*NGRID*4,ind,qq);
+              rhoj = spline(_d_rho_spline+(jdx+2)*NGRID*4,ind,qq);
 #endif
               }
 	      atomicAdd(_d_rhotot+i, rhoi);
@@ -398,8 +408,8 @@ __global__ void kernel_rhoeam_2(int _NP, int _NNM, int eamfiletype, int eamgrid,
 #else
         //embf[i] = interp(frho[idx],frhop[idx],drhoar,ind,qr);
         //embfp[i] = interp1(frho[idx],frhop[idx],drhoar,ind,qr);
-        _d_embf[i] = spline(_d_frho_spline[idx*4*NGRID],ind,qr);
-        _d_embfp[i] = spline1(_d_frho_spline[idx*4*NGRID],ind,qr);
+        _d_embf[i] = spline(_d_frho_spline+idx*4*NGRID,ind,qr);
+        _d_embfp[i] = spline1(_d_frho_spline+idx*4*NGRID,ind,qr);
 #endif
 	//if (i <= 3)
 	//printf("i = %d, _d_embf[i]= %e, _d_embfp[i]=%e\n", i, _d_embf[i], _d_embfp[i]);
@@ -415,7 +425,7 @@ __global__ void kernel_rhoeam_2(int _NP, int _NNM, int eamfiletype, int eamgrid,
 void EAMFrame::rhoeam_cuda() {
   int size = _NP*allocmultiple;
   gpuErrchk(cudaMemcpy(_d_H_element,_H.element,9*sizeof(double),cudaMemcpyHostToDevice));
-  if (mesg2cuda_nbr_refreshed == 1) { 
+  if (1) { // || mesg2cuda_nbr_refreshed == 1) { 
     gpuErrchk(cudaMemcpy(_d_nn, nn,size*sizeof(int),cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(_d_nindex,nindex[0],sizeof(int)*size*_NNM,cudaMemcpyHostToDevice));
     mesg2cuda_nbr_refreshed = 0;
@@ -427,8 +437,8 @@ void EAMFrame::rhoeam_cuda() {
 #ifdef DEBUG_USECUDA
 //  assert(check_host_device_memory_transfer() == 0);
 #endif
-  kernel_rhoeam_0<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
-  //kernel_rhoeam_1<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  kernel_rhoeam_0<<< (_NP+NTHREADS-1)/NTHREADS,NTHREADS >>>(_NP, _NNM, eamfiletype, eamgrid,
+// kernel_rhoeam_0<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix,_d_phipx,
                            _d_frho,_d_frhop,
@@ -448,7 +458,7 @@ void EAMFrame::rhoeam_cuda() {
                            _d_VIRIAL_IND_element,
                            _d_fscalars);
 
-  kernel_rhoeam_1<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  kernel_rhoeam_1<<< (_NP+NTHREADS-1)/NTHREADS,NTHREADS >>>(_NP, _NNM, eamfiletype, eamgrid,
   //kernel_rhoeam_1<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix,_d_phipx,
@@ -469,13 +479,13 @@ void EAMFrame::rhoeam_cuda() {
                            _d_VIRIAL_IND_element,
                            _d_fscalars);
 /* debug */
-#if 0 //def DEBUG_USECUDA
+#if 0
   gpuErrchk(cudaMemcpy(_h_d_rhotot,_d_rhotot, _NP*sizeof(double), cudaMemcpyDeviceToHost));
-  for(int i = 0;i<_NP;i++)
+  for(int i = 0;i<100;i++)
     printf("atom[%d] rhotot=%e\n",i,_h_d_rhotot[i]);
 #endif
 
-  kernel_rhoeam_2<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
+  kernel_rhoeam_2<<< (_NP+NTHREADS-1)/NTHREADS,NTHREADS >>>(_NP, _NNM, eamfiletype, eamgrid,
   //kernel_rhoeam_2<<< 1,1 >>>(_NP, _NNM, eamfiletype, eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix,_d_phipx,
@@ -497,11 +507,15 @@ void EAMFrame::rhoeam_cuda() {
                            _d_fscalars);
 
     /* debug */
-#if 0
+#if 1
   gpuErrchk(cudaMemcpy(_h_d_embf,_d_embf, _NP*sizeof(double), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(_h_d_embfp,_d_embfp, _NP*sizeof(double), cudaMemcpyDeviceToHost));
   gpuErrchk(cudaMemcpy(_h_d_EPOT_IND,_d_EPOT_IND, _NP*sizeof(double), cudaMemcpyDeviceToHost));
-  for (int i = 0;i<_NP;i++)
-        printf("atom[%d] embf=%e, _d_EPOT=%e\n",i,_h_d_embf[i], _h_d_EPOT_IND[i]);
+#if 0
+  for (int i = 0;i<3;i++)
+        printf("atom[%d] embf=%e, embfp=%e, _d_EPOT=%e\n",i,_h_d_embf[i],_h_d_embfp[i], _h_d_EPOT_IND[i]);
+#endif
+
 #endif
 
 #if 0
@@ -608,8 +622,8 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 #else
               //pp = interp(phi[idx],phip[idx],drar,ind,qq);
               //fpp = interp1(phi[idx],phip[idx],drar,ind,qq);
-              pp = spline(_d_phi_spline[idx*NGRID*4],ind,qq);
-              fpp = spline1(_d_phi_spline[idx*NGRID*4],ind,qq);
+              pp = spline(_d_phi_spline+idx*NGRID*4,ind,qq);
+              fpp = spline1(_d_phi_spline+idx*NGRID*4,ind,qq);
 #endif
             }
             else
@@ -635,8 +649,8 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 #else
             //denspi = interp1(rho[idx],rhop[idx],drar,ind,qq);
             //denspj = interp1(rho[jdx],rhop[jdx],drar,ind,qq);
-            denspi = spline1(_d_rho_spline[idx],ind,qq);
-            denspj = spline1(_d_rho_spline[jdx],ind,qq);
+            denspi = spline1(_d_rho_spline+idx,ind,qq);
+            denspj = spline1(_d_rho_spline+jdx,ind,qq);
 #endif
             } else if ( (idx!=jdx) && (eamfiletype==4) ) {
 #ifndef _CUBICSPLINE
@@ -645,8 +659,8 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
             denspj = _d_rhop[(idx+2)*NGRID+ind] +
                 qq*(_d_rhop[(idx+2)*NGRID+ind+1]-_d_rhop[(idx+2)*NGRID+ind])/_d_drar ;
 #else
-            denspi = spline1(_d_rho_spline[(jdx+2)*NGRID*4],ind,qq);
-            denspj = spline1(_d_rho_spline[(idx+2)*NGRID*4],ind,qq);
+            denspi = spline1(_d_rho_spline+(jdx+2)*NGRID*4,ind,qq);
+            denspj = spline1(_d_rho_spline+(idx+2)*NGRID*4,ind,qq);
 #endif
             }
 
@@ -656,8 +670,10 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 	    atomicAdd(_d_EPOT_IND+i, 0.5*pp);
 	    atomicAdd(_d_EPOT_IND+jpt, 0.5*pp);
 
+#if 0
 	    if (i <=2)
         printf("atom[%d], j =%d, jpt=%d,fpp=%e, qq=%e, _d_rhop[idx*NGRID+ind]=%e, _d_embfp[jpt]=%e \n",i,j,jpt, fpp, qq, _d_rhop[idx*NGRID+ind], _d_embfp[jpt]);
+#endif
             
             fij=rij*fp;
 //????????????????????????????????????????????????
@@ -683,8 +699,8 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 
 void EAMFrame::kraeam_cuda() {
 #if 1
-//  kernel_kraeam<<< (_NP+31)/32,32 >>>(_NP, _NNM, eamfiletype, eamgrid,
- kernel_kraeam<<< 1,1 >>>(_NP,  _NNM, eamfiletype,  eamgrid,
+ kernel_kraeam<<< (_NP+NTHREADS-1)/NTHREADS,NTHREADS >>>(_NP, _NNM, eamfiletype, eamgrid,
+ //kernel_kraeam<<< 1,1 >>>(_NP,  _NNM, eamfiletype,  eamgrid,
                            _d_rho, _d_rhop, _d_phi, _d_phip,
                            _d_phix, _d_phipx,
                            _d_frho, _d_frhop,
@@ -725,7 +741,7 @@ void EAMFrame::kraeam_cuda() {
   INFO_Printf("I am here 5.0, _EPOT = %g \n", _EPOT);
   _EPOT += thrust::reduce(t_EPOT,t_EPOT+_NP); 
 #endif
-  INFO_Printf("I am here 2, _EPOT = %g \n", _EPOT);
+ // INFO_Printf("I am here 2, _EPOT = %g \n", _EPOT);
 #endif
 }
 

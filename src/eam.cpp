@@ -247,8 +247,12 @@ void EAMFrame::rhoeam()
             //rhoi = interp(rho[jdx],rhop[jdx],drar,ind,qq);
             rhoi = spline(rho_spline[jdx],ind,qq);
 #endif
+	    if (i < -10)
+	    printf("Before: i=%d, j = %d, ind = %d, rhoi = %e, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, rhoi, i, rhotot[i], jpt, rhotot[jpt]);
             rhotot[i]+=rhoi;
             rhotot[jpt]+=rhoi;
+	    if (i < -10)
+	    printf("After: i=%d, j = %d, ind = %d, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, i, rhotot[i], jpt, rhotot[jpt]);
             }
             else
             {
@@ -275,14 +279,13 @@ void EAMFrame::rhoeam()
               }
               rhotot[i]+=rhoi;
               rhotot[jpt]+=rhoj;
-
             }
         }
     }
 
     /* debug */
 #if 0
-    for(i=0;i<_NP;i++)
+    for(i=0;i<100;i++)
     {
        INFO_Printf("atom[%d] rhotot=%e\n",i,rhotot[i]);
     }
@@ -308,14 +311,20 @@ void EAMFrame::rhoeam()
         embf[i] = frho[idx][ind] + qr*frhop[idx][ind];
         embfp[i] = frhop[idx][ind] +
           qr*(frhop[idx][ind+1]-frhop[idx][ind])/drhoar;
+#if 0
+	if (i < 3)
+	  printf("i = %d,ind =%d, qr = %e, embfp=%e, frhop=%e, frhop1 = %e\n", i, ind, qr, embfp[i], frhop[indx][ind], frhop[idx][ind+1]);
+#endif
 #else
         //embf[i] = interp(frho[idx],frhop[idx],drhoar,ind,qr);
         //embfp[i] = interp1(frho[idx],frhop[idx],drhoar,ind,qr);
         embf[i] = spline(frho_spline[idx],ind,qr);
         embfp[i] = spline1(frho_spline[idx],ind,qr);
+#if 0
+	if (i < 3)
+	  printf("i = %d,ind =%d, qr = %e, embfp=%e\n", i, ind, qr, embfp[i]);
 #endif
-	if (i <= 3)
-	printf("i = %d,embf[i]= %e,embfp[i]=%e\n", i, embf[i], embfp[i]);
+#endif
         atpe3b[i] = embf[i];
         _EPOT_IND[i]+=atpe3b[i];
         _EPOT+=atpe3b[i];
@@ -323,9 +332,9 @@ void EAMFrame::rhoeam()
 
     /* debug */
 #if 0
-    for(i=0;i<_NP;i++)
+    for(i=0;i<3;i++)
     {
-        INFO_Printf("atom[%d] embf=%e, _EPOT_IND=%e, _EPOT=%e\n",i,embf[i], _EPOT_IND[i], _EPOT);
+        INFO_Printf("atom[%d] embf=%e, embfp=%e, _EPOT_IND=%e, _EPOT=%e\n",i,embf[i], embfp[i], _EPOT_IND[i], _EPOT);
     }
 #endif
 }
@@ -430,8 +439,10 @@ void EAMFrame::kraeam()
             _EPOT_IND[jpt]+= 0.5*pp;
             _EPOT+=pp;
 
+#if 0
 	    if (i <=2)
         printf("atom[%d], j =%d, jpt = %d, fpp=%e, qq=%e, rhop[idx*NGRID+ind]=%e, embfp[jpt]=%e \n",i,j,jpt, fpp, qq, rhop[idx][ind], embfp[jpt]);
+#endif
             
             fij=rij*fp;
             _F[i]+=fij;
