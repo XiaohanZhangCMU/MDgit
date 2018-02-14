@@ -8,7 +8,7 @@ source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 # Definition of procedures
 #*******************************************
 proc initmd { status { n 0 } } {
-#MD++ setnolog
+MD++ setnolog
 MD++ setoverwrite
 MD++ dirname = runs/ni-cs/ni-Rao-screw-30x30x20-$status
 MD++ NNM = 200
@@ -697,8 +697,8 @@ if { $status == -1 } {
   if { $USEGPU == 1 } {
     MD++ cuda_memcpy_all
   }
-#  MD++ eval quit
-  MD++ conj_fevalmax = 100 relax eval quit
+  MD++ eval quit
+#  MD++ conj_fevalmax = 100 relax eval quit
 
 
 
@@ -4051,21 +4051,26 @@ if {0} {
   set seed [clock clicks]
   MD++ setoverwrite 
 #  MD++ dirname = /data/Cai-group/Codes/MD++.svn/runs/ni_cs_Xiaohan/ni_cs_rao99_md_215_216/ni-Rao-cs-${status}_${n}_${n2}_${n3}_${n4}_${n5}_T${n6}
-  MD++ dirname = /scratch/xzhang11/ni_cs_rao99_md_215_216/ni-Rao-cs-${status}_${n}_${n2}_${n3}_${n4}_${n5}_T${n6}
+  MD++ dirname = /home/xzhang11/MD++/runs/ni-cs/ni_cs_rao99_md_215_216/ni-Rao-cs-${status}_${n}_${n2}_${n3}_${n4}_${n5}_T${n6}
 
   MD++ NNM = 200
   MD++ writeall = 1
 
 #  exec ln -f -s /data/Cai-group/Codes/MD++.svn/runs/ni_cs_Xiaohan/ni_cs_rao99_md_215_216/ni-Rao-cs-215_${n}_${n2}_T300/final.cn initial.cn
-  exec ln -f -s /scratch/xzhang11/ni_cs_rao99_md_215_216/ni-Rao-cs-215_${n}_${n2}_T300/final.cn initial.cn
+  exec ln -f -s /home/xzhang11/MD++/runs/ni-cs/ni_cs_rao99_md_215_216/ni-Rao-cs-215_${n}_${n2}_T300/final.cn initial.cn
 
   readpot
 
 #  MD++ incnfile = "/data/Cai-group/Codes/MD++.svn/runs/ni_cs_Xiaohan/ni_cs_rao99_md_215_216/ni-Rao-screw-30x30x20-0/perf.cn" readcn  writeall = 1
-  MD++ incnfile = "/scratch/xzhang11/ni_cs_rao99_md_215_216/ni-Rao-screw-30x30x20-0/perf.cn" readcn  writeall = 1
+  MD++ incnfile = "/home/xzhang11/MD++/runs/ni-cs/ni_cs_rao99_md_215_216/ni-Rao-screw-30x30x20-0/perf.cn" readcn  writeall = 1
+
   set NP0 [MD++_Get "NP"]
 
   MD++ incnfile = initial.cn  readcn setconfig1 #A
+
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
 
   MD++ freeallatoms
 
@@ -4079,13 +4084,20 @@ if {0} {
 
   if { 1 } { # determine number of group 1/2 atoms 
   #Top surface atoms selection
-  MD++ plot_color_axis = 2 eval # 2 means CSD
+  puts "I am here 2.1"
+  MD++ plot_color_axis = 2 
+  puts "I am here 2.2"
+
+  MD++ eval # 2 means CSD
+  puts "I am here 2"
   MD++ input = \[ 1 -10 10 0.2 10 -10 10 10 100 \] fixatoms_by_pos_topol
   MD++ input = 1 setfixedatomsgroup 
   set N1 [MD++_Get "NPfixed"]
+  puts "I am here 3"
   MD++ freeallatoms
   #Bottom surface atoms selection
   MD++ input = \[ 1 -10 10 -10 -0.2 -10 10 10 100 \] fixatoms_by_pos_topol
+  puts "I am here 3.1"
   MD++ input = 2 setfixedatomsgroup 
   set N2 [MD++_Get "NPfixed"]
   MD++ freeallatoms
@@ -4094,6 +4106,8 @@ if {0} {
     set N1 4800
     set N2 4800
   }
+
+  puts "I am here 4"
 
   set lx [MD++_Get "H_11"]
   set lz [MD++_Get "H_33"]
@@ -4108,6 +4122,7 @@ if {0} {
   set f2z [expr  ${sigma_yz}*$lx*$lz/$N2*0.6242E-05]
 
   MD++ extforce = \[ 2   $f1x $f1y $f1z  $f2x $f2y $f2z \]
+  puts "I am here 5"
   
   MD++ eval
   
@@ -4130,13 +4145,20 @@ if {0} {
   
   # Lower totalsteps because everything is converging faster
   set totalsteps [expr $totalsteps / 4]
-  
+ #????????????????????????????????????????????????????????????????????????????????????????? 
+  set totalsteps 400 
+ #????????????????????????????????????????????????????????????????????????????????????????? 
   # Each subiteration has 10 steps, and there are 20 subiterations
   set maxiter [expr $totalsteps / 200.0 ]
   puts "maxiter = $maxiter"
   set delta_T [expr ($n6-300)*2 / $maxiter ]
   puts "delta_T = $delta_T"
   set newT 300
+
+  set runC 0
+  if { $runC == 1 } { 
+     MD++ wrapper_run
+  } else { 
   #swap_velocities $NP 1000
   for { set iter 1 } { $iter <= $maxiter } { incr iter } {
 
@@ -4164,7 +4186,6 @@ if {0} {
     	MD++ T_OBJ = $newT
     }
     
-
     for { set subiter 1 } { $subiter <= 20 } { incr subiter} {
        MD++ continue_curstep = 1
        MD++ totalsteps = 10 run
@@ -4212,6 +4233,7 @@ if {0} {
        MD++ input = \[ 3 1 $delta_xz \] changeH_keepS
        swap_velocities $NP 20
     }
+  }
   }
   
   MD++ finalcnfile = final.cn writeall = 1 writecn

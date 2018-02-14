@@ -1146,6 +1146,10 @@ public:
     /* Molecular Dynamics simulation */
     virtual void integrator();       /* MD integrator */
 
+/* Xiaohan adds the wrapper function for cross slip */
+    void wrapper_run();
+    void swap_velocities(double);
+
     virtual void run();              /* run the simulation */
     virtual void calcprop();         /* calculate physical properties */
     virtual void calcoutput();       /* calculate output string */

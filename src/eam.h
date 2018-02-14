@@ -1,6 +1,6 @@
 /*
   eam.h
-  by Wei Cai  caiwei@mit.edu
+  by Wei Cai  caiwei@mit.edu, Xiaohan zhang (GPU)
   Last Modified : Mon Sep  8 18:41:56 2008
 
   FUNCTION  : MD++ implementation of EAM/MEAM potential
@@ -16,7 +16,7 @@
 #ifdef _USECUDA
 #include <cuda_runtime.h>
 #include "linalg3_cu.h"
-#define DEBUG_USECUDA
+//#define DEBUG_USECUDA
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code,const char *file,int line,bool abort = true) {
   if (code != cudaSuccess) {
@@ -51,6 +51,12 @@ public:
     int MC_need, *nbst, *nbst1;
 
 #ifdef _USECUDA
+    int *_d_nbst;
+    int *_d_nn;
+    int *_d_nindex;
+    int *_d_fixed;
+    int *_d_species;
+
     double *_d_rho, *_d_rhop, *_d_phi, *_d_phip;
     double *_d_phix, *_d_phipx;
     double *_d_frho, *_d_frhop;
@@ -58,16 +64,10 @@ public:
     double *_d_phix_spline, *_d_frho_spline;
     double *_d_rval, *_d_rhoval;
     double *_d_atpe3b, *_d_rhotot, *_d_embf, *_d_embfp;
-    int *_d_nbst;
 
     double *_d_H_element;
-    double *_d_VIRIAL_element;
     double *_d_VIRIAL_IND_element;
     double *_d_EPOT_IND;
-    int *_d_fixed;
-    int *_d_species;
-    int *_d_nindex;
-    int *_d_nn;
     G_Vector3 *_d_SR;
     G_Vector3 *_d_F;
     /* order:
