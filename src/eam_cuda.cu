@@ -311,6 +311,8 @@ __global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
 #endif
 	    atomicAdd(_d_rhotot+i, rhoi);
 	    atomicAdd(_d_rhotot+jpt, rhoi);
+	    //_d_rhotot[i] += rhoi;
+	    //_d_rhotot[jpt] += rhoi;
             }
             else
             {
@@ -337,6 +339,8 @@ __global__ void kernel_rhoeam_1(int _NP, int _NNM, int eamfiletype, int eamgrid,
               }
 	      atomicAdd(_d_rhotot+i, rhoi);
 	      atomicAdd(_d_rhotot+jpt, rhoj);
+	      //_d_rhotot[i] += rhoi;
+	      //_d_rhotot[jpt] += rhoj;
             }
         }
     }
@@ -639,8 +643,9 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
             fp = (fpp + fcp) / (rmagg+_d_rmin);
             
 	    atomicAdd(_d_EPOT_IND+i, 0.5*pp);
-	    //_d_EPOT_IND[i] += 0.5*pp;
 	    atomicAdd(_d_EPOT_IND+jpt, 0.5*pp);
+	    //_d_EPOT_IND[i] += 0.5*pp;
+	    //_d_EPOT_IND[jpt] += 0.5*pp;
             
             fij=rij*fp;
 	    atomicAdd(&(_d_F[i].x),fij[0]);
@@ -649,10 +654,14 @@ __global__ void kernel_kraeam(int _NP, int _NNM, int eamfiletype, int eamgrid,
 	    atomicAdd(&(_d_F[jpt].x),-fij[0]);
 	    atomicAdd(&(_d_F[jpt].y),-fij[1]);
 	    atomicAdd(&(_d_F[jpt].z),-fij[2]);
+	    //_d_F[i] += fij;
+	    //_d_F[jpt]-= fij;
 
 	    atomicAddnvv(_d_VIRIAL_IND_element+i*9,-.5*fp,rij,rij);
 	    atomicAddnvv(_d_VIRIAL_IND_element+jpt*9,-.5*fp,rij,rij);
-
+	    //addnvv(_d_VIRIAL_IND_element+i*9, -.5*fp,rij,rij);
+	    //addnvv(_d_VIRIAL_IND_element+jpt*9, -.5*fp,rij,rij);
+	    
             //_VIRIAL.addnvv(-fp,rij,rij);
             //assert(SURFTEN==0);
 #if 0
