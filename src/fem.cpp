@@ -187,7 +187,7 @@ int FEMFrame::read_elements(const char* fname)
 int FEMFrame::read_fem_coeff(const char* fname)
 {
    INFO_Printf("_NELE = %d, EquationType = %d\n", _NELE, _EquationType);
-   if (_EquationType == 2 ) { 
+   if (_EquationType == 1 || _EquationType == 0) { 
       assert(_NELE>0);
       for (int iele = 0; iele < _NELE; iele ++) {
          char str[10]; sprintf(str, "%d", iele);
@@ -203,7 +203,7 @@ int FEMFrame::read_fem_coeff(const char* fname)
          read_element_wise_fem_coeff(elem_fname, dfdustart);
         }
    }
-   else if (_EquationType == 0 || _EquationType == 1) {
+   else if ( _EquationType == 2) {
      INFO_Printf("_NELE = %d\n", _NELE);
      read_uniform_fem_coeff(fname);
    } 
@@ -708,14 +708,14 @@ void FEMFrame::potential() {
          beam_fem_energy_force();
          break;
       case 1:
+         islam_fem_energy_force();
+         break;
+      case 2:
 #ifdef _USECUDA
          cuda_snap_fem_energy_force();
 #else
          snap_fem_energy_force();
 #endif
-         break;
-      case 2:
-         islam_fem_energy_force();
          break;
       default:
       FATAL("Need to set EquationType in script\n");
@@ -918,6 +918,8 @@ void FEMFrame::islam_fem_energy_force() {
 		  Fdef[ip][iq] += dFdu[dfdustart+ind]*drj[in];
 	      } } }
 	}
+
+//	INFO_Printf("Fdef = %g, %g, %g, %g, %g, %g, %g, %g, %g\n", Fdef[0][0], Fdef[1][1],Fdef[2][2],Fdef[0][1],Fdef[0][2],Fdef[1][0],Fdef[1][2],Fdef[2][0],Fdef[2][1]);
 
 	E = Fdef.tran()*Fdef-I;
 	B = Fdef*Fdef.tran();
@@ -1139,8 +1141,7 @@ void FEMFrame::beam_fem_energy_force() {
 }  
 
 Matrix33 FEMFrame::getEigenF(Vector3 p, Matrix33 Fdef) {
-  Matrix33 I;    
-  I[0][0]=I[1][1]=I[2][2]=1;
+  Matrix33 I; I.eye();    
    if (p[2] <= y_eigen_zbound_max && p[2] >= y_eigen_zbound_min) { 
     I[1][1] = y_eigen_strain;
    }

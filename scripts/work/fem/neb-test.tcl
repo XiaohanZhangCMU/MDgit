@@ -46,7 +46,7 @@ proc openwindow { } {
 #-------------------------------------------------------------
 proc relax_fixbox { } { MD++ {
 #Conjugate-Gradient relaxation
-  conj_ftol = 1e-2 conj_itmax = 2600 conj_fevalmax =30 # 3300000
+  conj_ftol = 5e-4 conj_itmax = 1000 conj_fevalmax = 130000
   conj_fixbox = 1 #conj_monitor = 1 conj_summary = 1
   relax 
 } }
@@ -60,6 +60,11 @@ proc relax_freebox { } { MD++ {
   relax 
 } }
 
+proc Fatal { mesg } {
+  puts $mesg
+  MD++ quit
+}
+
 #*******************************************
 # Main program starts here
 #*******************************************
@@ -68,8 +73,7 @@ proc relax_freebox { } { MD++ {
 #        2:
 # eqnType 0: beam. 1: snapband. 2: islam
 if { $argc <= 3 } {
-  puts "Need to specify status, pbid, meshid and eqnType"
-  MD++ quit
+  Fatal "Need to specify status, pbid, meshid and eqnType"
 } elseif { $argc > 3 } {
   set status [lindex $argv 0]
   set pbid [lindex $argv 1]
@@ -105,31 +109,25 @@ set bdyfile  [ glob -directory $meshfolder *.bdy ]
 set length [string length $elefile]
 set filename [string range $elefile 0 [expr $length-5] ]
 
+puts "elefile = $elefile"
+puts "filename = $filename"
+
 MD++ elements_file = $elefile  read_elements
-puts "I am here 1"
 MD++ fem_coeff_file = ${filename}-C3D8-Q8.dat read_fem_coeff
 #MD++ fem_coeff_file = ${filename}-CPE4-Q4.dat read_fem_coeff
-puts "I am here 2"
 MD++ incnfile = $fecnfile  readcn
-puts "I am here 3"
 MD++ fem_bdy_nodes_file = $bdyfile  read_bdy_nodes
 
-puts "I am here 4"
-
-# 2-d mesh xy
-#16. islam, fancy, expanded
-#12. snap band 3d.
-if { $meshid==1 || $meshid==2 || $meshid==5  || $meshid==7 || $meshid==8 || $meshid==11  || $meshid==14 || $meshid==15 || $meshid==16 || $meshid==19 || $meshid==20 || $meshid==30 } {
+# meshid
+# 1: 2d beam. 
+# 2: islam, fancy, expanded
+# 3: snap band 3d.
+if { $meshid==1 || $meshid == 2 } { 
   MD++ map23 = \[ 0 1 \] 
-#xz
-} elseif { $meshid==3 || $meshid==4 || $meshid==6 } {
-  MD++ map23 = \[ 0 2 \] 
-# 3-d mesh
-} elseif { $meshid==9 || $meshid==10 || $meshid==12 || $meshid==13 || $meshid==17 || $meshid==18 || $meshid==21 || $meshid==22 || $meshid==23  } {
+} elseif { $meshid==3 } { 
   MD++ map23 = \[-1 -1 \]
 } else {
-  puts "mesh id is not valid."
-  MD++ quit
+  Fatal "mesh id is not valid."
 }
 
 # n_bdy_nodes have duplicates in it. all corner nodes are double counted
@@ -145,277 +143,50 @@ if { $status == 0 } {
   MD++ RtoRref
   if { $USEGPU == 1 } {
     MD++ cuda_memcpy_all
+  } else { 
+    setup_window
+    openwindow
   }
-#  setup_window
-#  openwindow
 
   if { $pbid == 1 } {     	  
-    for { set niter 0 } { $niter <= $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-      
-      if { $bid == 1 } {	    
-        MD++ R([expr $bnd * 3 ]) = [ expr 3.6 * $xb ]
-        MD++ fixed($bnd) = 1
-        set res [ MD++_Get R([expr $bnd*3]) ]
-        puts "R = $res"
-      }
-      if { $bid == 0 } {	
-        MD++ fixed($bnd) = 1    
-      } 
-   }      
-       
-   MD++ RHtoS
-
-  } elseif { $pbid == 2 || $pbid == 3 } { 	  
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      puts "bid = $bid"
-      if { $bid == 0 || $bid == 2 } {
-        puts "bnd = $bnd is fixed"
-        MD++ fixed($bnd) = 1	    
-      }
-    }
-    if { $pbid == 2 } {
-      set epsilon 0.5
-    } elseif { $pbid == 3 } {
-      set epsilon -0.5
-    }
-    set Lx_fix  [expr $Lx0*(1+$epsilon) ] 
-    puts "Lx = $Lx_fix"
-    MD++ H_11 = $Lx_fix
-
-  } elseif { $pbid == 4 } {
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-
-      # perturb to get two modes
-      set modeII 0
-      set perturb 0.0001
-      if {$modeII ==0} {
-        if { $bid == 1 || $bid == 3 } {		
-	  set PI 3.1415926
-	  set oldR [MD++_Get R([expr $bnd*3+1])]
-          set barlength 5
-	  set pert [expr $perturb*cos($PI/$barlength * $xb)]
-	  MD++ R([expr $bnd*3+1])=[expr $yb+$perturb*cos($PI/$barlength*$xb)]
-#	  MD++ R([expr $bnd*3+1])=[expr $yb+$perturb*(floor(rand()*2)-1)]
-        } 
-      }
-      if { $bid == 0 || $bid == 2 } {
-	MD++ fixed($bnd) = 1	    
-      }
-    }
-    if { $modeII == 0 || $modeII == 1 } {
-      MD++ RHtoS
-    }
-#    MD++ sleep
-
-#perturb = 0.0001, -0.0125: no curvature, -0.015: mode I curved
-
-#perturb = 0, -0.3 -- 0.0345: rubbed no curvature, -0.5: mode I curved
-    if { $modeII == 0 } { 
-      set epsilon -0.035
-    }
-    if { $modeII == 1 } {
-      set epsilon -0.035
-    }
-    set Lx_fix  [expr $Lx0*(1+$epsilon) ] 
-    MD++ H_11 = $Lx_fix
-
-# An equivalent pid as pid=4. Create buckled 3d beam
-  } elseif { $pbid == 5 } {
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-
-      set modeII 0
-      set perturb 0.1
-      if {$modeII ==0} {
-        if { $bid == 4 || $bid == 5 } {		
-          set PI 3.1415926
-          set newR [expr $yb + $perturb*cos($PI/$Lx0 * $xb)]
-          set oldR [MD++_Get R([expr $bnd*3+1])]
-          # cos perturb to get determined mode 1 upward/downward
-	  set barlength 5
-	  set pert [expr $perturb*cos($PI/$barlength * $xb)]
-	  MD++ R([expr $bnd*3+1])=[expr $yb+$perturb*cos($PI/$barlength*$xb)]
-        } 
-      }
-      if { $bid == 0 || $bid == 1 } {
-         MD++ fixed($bnd) = 1	    
-      }
-    }
-    if { $modeII == 0 || $modeII == 1 } {
-      MD++ RHtoS
-    }
-
-    if { $modeII == 0 } { 
-        set epsilon -0.05
-    }
-    if { $modeII == 1 } {
-        set epsilon -0.05
-    }
-    set Lx_fix  [expr $Lx0*(1+$epsilon) ] 
-    MD++ H_11 = $Lx_fix
-
-# Create 3-d snapband in one direction using eigenstrain formulation
-  } elseif { $pbid == 6 } {
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-      
-# perturb to get two modes
-      set modeII 0
-      set perturb 0.1
-      if { $bid == 0 || $bid == 1 } {
-         MD++ fixed($bnd) = 1	    
-      }
-    }
-    if { $modeII == 0 || $modeII == 1 } {
-      MD++ RHtoS
-    }
-# Create 3-d snapband in either x or y direction using eigenstrain formulation
-# Do not fix the whole x=xmin and x=max domain, but only fix the corners of that surfaces.
-# use snapband executable instead of fem
-  } elseif { $pbid == 7 } {
-    set modeII 0
-    set barlength 8
+    MD++ writeall = 1
     set PI 3.1415926
-    set perturb 2
-    set NP [ MD++_Get "NP" ] 
-    # MD++ incnfile = "x-curve.cn" readcn
-    # MD++ incnfile = "y-curve-large-152.cn" readcn
-    # MD++ incnfile = "xonlycurve.cn" readcn
-
-    set x_eigen_strain 1
-    set y_eigen_strain 1.38
-puts "I am here 5"
-    
-    MD++ x_eigen_strain = $x_eigen_strain
-    MD++ y_eigen_strain = $y_eigen_strain
-    # they are scaled coordinates
-    MD++ x_eigen_zbound_min = -10
-    MD++ x_eigen_zbound_max =  0.0025
-    MD++ y_eigen_zbound_min = -10
-    MD++ y_eigen_zbound_max = -0.0025
-
-puts "I am here 6"
-
-    MD++  conj_ftol = 1e-2 conj_itmax = 260 conj_fevalmax = 330000
-    MD++ conj_fixbox = 1 
-     
-    if { 1 } {
-puts "I am here 7"
-#      relax_fixbox
-puts "I am here 7.1"
-
-      if { $x_eigen_strain == 1 } { 
-         MD++ finalcnfile = "y-curve-1.cn" writecn
-      } elseif { $y_eigen_strain == 1 } { 
-         MD++ finalcnfile = "x-curve-1.cn" writecn
-      } 
-    } else { 
-      if { $x_eigen_strain == 1 } { 
-         MD++ incnfile = "y-curve-1.cn" readcn
-      } elseif { $y_eigen_strain == 1 } { 
-         MD++ incnfile = "x-curve-1.cn" readcn
-      } 
-    } 
-puts "I am here 8"
-     
-    MD++ x_eigen_strain = 0.72
-    MD++ y_eigen_strain = 1.38
-
-    MD++  conj_ftol = 1e-2 conj_itmax = 2600 conj_fevalmax = 33000
-  MD++ conj_fevalmax = 1000 relax quit
-  MD++ eval 
-    MD++ finalcnfile = "curve-2.cn" writecn
-
-    set perturb_2_curved_band 1
-
-    if { $perturb_2_curved_band == 1 } {
-
-    if { 0 } {
-      for { set iter 0 } { $iter < $NP } { incr iter 1 } {
-        set x [ MD++_GetVector R $iter x ] 
-        set y [ MD++_GetVector R $iter y ]
-        set z [ MD++_GetVector R $iter z ]
-        MD++ R([expr $iter*3+2])=[expr $z+$perturb*cos($PI/$barlength*($x)) ]
-      }
-    } 
-    if { 0 } {
-      for { set niter 0 } { $niter < $NP } { incr niter 1 } {
-        set x [ MD++_GetVector R $niter x ] 
-        set y [ MD++_GetVector R $niter y ]
-        set z [ MD++_GetVector R $niter z ]
-        MD++ R([expr $niter*3+2]) = [expr $z - 2*cos($PI/3.0 * $y)]
-      }
-    }
-    }
-    if { $modeII == 0 || $modeII == 1 } {
-      MD++ RHtoS
-    }
-  } elseif { $pbid == 8 } {
-# 2d islamic cubes. 	  
-    if { 0 } {
+    set barlength 2.5
+    set epsilon -0.035
+    for { set sAB 0 } { $sAB < 3 } { incr sAB 1 } {  
+      set sgn [ expr $sAB * 2 - 1 ] 
       for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
         set bnd [ MD++_Get bNds($niter) ]
         set bid [ MD++_Get bTags($niter) ]
-        if { $meshid == 14 || $meshid == 16 } {
-          if { $bnd == 12 || $bnd == 11   } {     
-            # MD++ fixed($bnd) = 1	    
-          }
+        set xb  [ MD++_Get bXs($niter) ]
+        set yb  [ MD++_Get bYs($niter) ]
+        # perturb to get two modes
+        set perturb [expr 0.01 * $sgn] 
+        if { $bid == 0 || $bid == 2 } {
+          MD++ fixed($bnd) = 1	    
         }
-        if { $meshid == 15 } {
-          if { $bid == 0 || $bid == 2 } {
-            puts "bnd = $bnd is fixed"
-            MD++ fixed($bnd) = 1
+        if { $bid == 1 || $bid == 3 } {		
+          MD++ R([expr $bnd*3+1])=[expr $yb+$perturb*cos($PI/$barlength*$xb)]
+	  if { $sAB == 2 } { 
+            MD++ R([expr $bnd*3+1])=[expr $yb+$perturb*0.1*sin($PI/$barlength*$xb)]
           } 
-        }              
+        } 
       }
-      
-      set epsilon  0
-      set Lx_fix [expr $Lx0 * (1+$epsilon)]
-      set Ly_fix [expr $Ly0 * (1+$epsilon)]
+      MD++ RHtoS
+      set Lx_fix  [expr $Lx0*(1+$epsilon) ] 
       MD++ H_11 = $Lx_fix
-      MD++ H_22 = $Ly_fix
-
-    } else {
-      MD++ saveH	       
-      #set initfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-      set initfile ../../../scripts/work/fem/fe-meshes/M15/membrane2d-islam-element.cn	       
-      MD++ incnfile = $initfile readcn		     
-      MD++ SHtoR
-      MD++ restoreH
       MD++ plot
+      relax_fixbox
+      MD++ finalcnfile = "NEBinit-$sAB.cn" writecn
+      MD++ finalcnfile = "NEBinit-$sAB.cfg" writeatomeyecfg
+      MD++ incnfile = $fecnfile  readcn 
+      MD++ SHtoR
     }
-#2d islamic fancy pattern
-  } elseif { $pbid == 9 } {
-
-    MD++ saveH	       
-    set initfile ../fem-0-$pbid-$meshid/NEBinit-3.cn
-    MD++ incnfile = $initfile readcn		     
-    MD++ restoreH
-    MD++ plot          
     MD++ sleep
+    exitmd
 
-  } elseif { $pbid == 10 } {
-# 2d islamic fancy pattern, apply force 
+  } elseif { $pbid == 2 } { 
+
     for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
       set bnd [ MD++_Get bNds($niter) ]
       set bid [ MD++_Get bTags($niter) ]	
@@ -440,291 +211,339 @@ puts "I am here 8"
           MD++ freeallatoms
       }             
     }
-    set magnitude 0.0
-    MD++ extforce = \[ 4 -$magnitude 0 0  0 0 0  $magnitude 0 0  0 0.0 0 \]
-  } elseif { $pbid == 11 } {
-#1: apply force
-    MD++ fixed(0)  = 1
-    MD++ input = 1 setfixedatomsgroup 
-    MD++ freeallatoms
-    
-    MD++ fixed(14) = 1
-    MD++ input = 2 setfixedatomsgroup
-    MD++ freeallatoms
-    
-    MD++ fixed(51) = 1
-    MD++ input = 3 setfixedatomsgroup
-    MD++ freeallatoms
-    
-    MD++ fixed(59) = 1
-    MD++ input = 4 setfixedatomsgroup
-    MD++ freeallatoms
-    
-    set magnitude 0.1
-    MD++ extforce = \[ 4 -$magnitude -$magnitude 0   $magnitude -$magnitude 0     -$magnitude $magnitude 0     $magnitude  $magnitude 0 \]
 
-    #for 2d truss elements. 
-  } elseif { $pbid == 12 } {     	  
-
-    MD++ fixed(11) = 1
-    MD++ input = 1 setfixedatomsgroup
-    MD++ freeallatoms
-    
-    MD++ fixed(0) = 1
-#   MD++ fixed(3) = 1
-    for { set niter 0 } { $niter <= $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-	    
-      if { $bid == 0 } {	    
-# MD++ fixed($bnd) = 1
-        puts "$bnd is fixed"
-      }
-    } 
-    MD++ RHtoS
-  } else {
-    puts "pbid value not valid"
-  }
-
-#  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
-  if { 0 } {
-    set epsilon 0
-    for { set niter 0 } { $niter < 10000000000 } { incr niter 1 } {
-      #set epsilon [expr $epsilon + 0.00002]
-      #set Lx_fix  [expr $Lx0*(1+$epsilon) ]
-      set Ly_fix  [expr $Ly0*(1+$epsilon*0.8) ]
-      #MD++ H_11 = $Lx_fix     
-       MD++ H_22 = $Ly_fix
-      set magnitude [expr 0.5]
-      #MD++ extforce = \[ 4 -$magnitude 0 0 0 -$magnitude 0 $magnitude 0 0  0 $magnitude 0 \]
-      MD++ extforce = \[ 4 -$magnitude 0 0 0 0 0 $magnitude 0 0 0 0 0 \]
-      set temp [expr $niter % 50 ]
-      if { $temp == 0 } {
-         MD++ finalcnfile = NEBinit${niter}.cn writecn
-         MD++ finalcnfile = NEBinit${niter}.cfg  writeatomeyecfg
-      }
-      MD++ relax
-      MD++ plot
-    }
-  }
-  if { 0 } {
     set magnitude 0
-    for { set niter 0 } { $niter < 100000 } { incr niter 1 } {
+    for { set niter 0 } { $niter < 10000 } { incr niter 1 } {
       set magnitude [expr $magnitude + 0.002 ]
       MD++ extforce = \[ 4 -$magnitude 0 0 0 0 0 $magnitude 0 0 0 0 0 \]
       relax_fixbox
       MD++ plot
-     }
+    }
+    relax_fixbox
+    
+    MD++ plot
+    MD++ writeall = 1
+    MD++ finalcnfile = "NEBinit-2.cn" writecn
+    MD++ finalcnfile = "NEBinit-2.cfg"  writeatomeyecfg
+
+# Create 3-d snapband in either x or y direction using eigenstrain formulation
+# Do not fix the whole x=xmin and x=max domain, but only fix the corners of that surfaces.
+  } elseif { $pbid == 3 } {
+    set modeII 0
+    set barlength 8
+    set PI 3.1415926
+    set perturb 2
+    set NP [ MD++_Get "NP" ] 
+    set x_curve  1
+    set y_curve  0
+    set ic_preparing 0
+
+    MD++ incnfile = "NEBinit-1.cn" readcn 
+    MD++ eval plot sleep 
+    # MD++ incnfile = "x-curve.cn" readcn
+    # MD++ incnfile = "y-curve-large-152.cn" readcn
+    # MD++ incnfile = "xonlycurve.cn" readcn
+
+    #x=0.7 y=1.0  --> x curve 
+    #x=1.0 y=1.46 --> y curve
+    
+    MD++ x_eigen_strain = 0.73
+    MD++ y_eigen_strain = 1.20
+    # they are scaled coordinates
+    MD++ x_eigen_zbound_min = -10
+    MD++ x_eigen_zbound_max =  0
+    MD++ y_eigen_zbound_min = -10
+    MD++ y_eigen_zbound_max =  0
+
+     
+    if { ${ic_preparing} == 1 } {
+      MD++  conj_ftol = 1e-2 conj_itmax = 260 conj_fevalmax = 330000
+      MD++ conj_fixbox = 1 relax
+      if { $x_curve == 1 } { 
+         MD++ finalcnfile = "y-curve-1.cn" writecn
+      } elseif { $y_curve == 1 } { 
+         MD++ finalcnfile = "x-curve-1.cn" writecn
+      } 
+      exitmd
+    } else { 
+      if { $x_curve == 1 } { 
+         #MD++ incnfile = "y-curve-1.cn" readcn
+         MD++ incnfile = "NEBinit-2.cn" readcn
+      } elseif { $y_curve == 1 } { 
+         #MD++ incnfile = "x-curve-1.cn" readcn
+         MD++ incnfile = "NEBinit-1.cn" readcn
+      } 
+    } 
+    MD++ plot
+     
+    MD++ x_eigen_strain = 0.7323
+    MD++ y_eigen_strain = 1.43
+
+#    MD++ relaxation_algorithm =  PRPLUS
+    MD++ conj_fixbox = 1 
+    MD++  conj_ftol = 1e-2 conj_itmax = 2600 conj_fevalmax = 130000 relax 
+    MD++ eval 
+    MD++ finalcnfile = "curve-2.cn" writecn
+
+    MD++ plot
+    MD++ writeall = 1
+    MD++ sleepseconds = 600
+    MD++ sleep
+    exitmd 
+
+  } else {
+    puts "pbid value not valid"
   }
-  relax_fixbox
-  
-  MD++ plot
-  MD++ writeall = 1
-  MD++ finalcnfile = "NEBinit-2.cn" writecn
-  MD++ finalcnfile = "NEBinit-2.cfg"  writeatomeyecfg
-  MD++ sleepseconds = 600
-  MD++ sleep
-  exitmd 
+
+} elseif { $status == 1 } {
+  	
+  if { $pbid == 1 } { 
+
+    for { set sAB 0 } { $sAB < 3 } { incr sAB 1 } {  
+      MD++ RtoRref 
+      if { $sAB == 0 } {
+         set A 0
+	 set B 1
+      } elseif { $sAB == 1 } { 
+         set A 0
+	 set B 2
+      } elseif { $sAB == 2 } {
+         set A 2 
+	 set B 1
+      } 
+      set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-$A.cn
+      set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-$B.cn 
+
+      MD++ incnfile = $initNEBfile readcn  saveH
+      MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+      MD++ incnfile = $initNEBfile readcn setconfig1
+      MD++ fixallatoms  constrain_fixedatoms freeallatoms
+      
+      for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
+        set bnd [ MD++_Get bNds($niter) ]
+        set bid [ MD++_Get bTags($niter) ]
+        if { $bid == 0 || $bid == 2 } {
+          MD++ fixed($bnd) = 1	    
+        }
+      }
+
+      MD++ {  chainlength = 24 allocchain   totalsteps = 10
+        timestep = 0.00001 printfreq = 2
+        initRchain
+        nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
+            	1  #redistribution frequency
+                ]
+        nebrelax
+      }
+      set ttlstps [ MD++_Get totalsteps ]
+      exec mv nebeng.out nebeng_${A}_${B}_${ttlstps}.out
+      MD++ finalcnfile = neb_chain_${A}_${B}.${ttlstps} writeRchain
+    } 
 
 # same as status 4. neb2d. used for islamic pattern. 
-} elseif { $status == 1 } {
-  MD++ RtoRref
-  
-  set initNEBfile ../../scripts/fem/fe-meshes/M15/membrane2d-islam-element.cn		
-  #set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  #set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-2.cn 
-  set finalNEBfile ../../scripts/fem/fe-meshes/M16/membrane2d-islam-element.cn
-  
-  MD++ incnfile = $initNEBfile readcn saveH
-  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
-  MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-  
-  MD++ {  chainlength = 24 allocchain   totalsteps = 500000
-#500
-#chainlength = 20 allocchain   totalsteps = 500
-    timestep = 0.00001 printfreq = 500
-    initRchain
-#incnfile = neb.chain.500 readRchain
+  } elseif { $pbid == 2 } {
+    MD++ RtoRref 
+    set initNEBfile ../../../scripts/work/fem/fe-meshes/M2/membrane2d-islam-element.cn		
+    set finalNEBfile ../../../scripts/work/fem/fe-meshes/M22/membrane2d-islam-element.cn
+    MD++ incnfile = $initNEBfile readcn saveH
+    MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+    MD++ incnfile = $initNEBfile readcn setconfig1
+    MD++ fixallatoms  constrain_fixedatoms freeallatoms
+    MD++ {  chainlength = 24 allocchain   totalsteps = 500000
+      #chainlength = 20 allocchain   totalsteps = 500
+      timestep = 0.00001 printfreq = 500
+      initRchain
+      #incnfile = neb.chain.500 readRchain
+      nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
+          	1  #redistribution frequency
+              ]
+      nebrelax
+      finalcnfile = neb.chain.500 writeRchain
+    }
+  } elseif { $pbid == 3 } {
+    MD++ RtoRref 
+    MD++ x_eigen_strain = 0.7323
+    MD++ y_eigen_strain = 1.43
+    MD++ x_eigen_zbound_min = -10
+    MD++ x_eigen_zbound_max =  0
+    MD++ y_eigen_zbound_min = -10
+    MD++ y_eigen_zbound_max =  0
 
-    nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
-		1  #redistribution frequency
-	    ]
-    nebrelax
-    finalcnfile = neb.chain.500 writeRchain
-  }
-} elseif { $status == 4 } {
-  MD++ RtoRref
-  	
-  set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-2.cn 
-  
-  MD++ incnfile = $initNEBfile readcn saveH
-  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
-  MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-  
-  if {1} {
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      if { $bid == 0 || $bid == 1 } {
-        puts "bnd = $bnd is fixed"
-        MD++ fixed($bnd) = 1	    
-      }
+    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+
+    MD++ incnfile = $initNEBfile readcn saveH
+    MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+    MD++ incnfile = $initNEBfile readcn setconfig1
+    MD++ fixallatoms  constrain_fixedatoms freeallatoms
+    MD++ {  chainlength = 24 allocchain   totalsteps = 5000
+      timestep = 0.00001 printfreq = 10
+      initRchain
+      #incnfile = neb.chain.500 readRchain
+      nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
+          	1  #redistribution frequency
+              ]
+      nebrelax
+      finalcnfile = neb.chain.500 writeRchain
     }
   }
-  
-  MD++ {  chainlength = 24 allocchain   totalsteps = 5
-#500
-#chainlength = 20 allocchain   totalsteps = 500
-    timestep = 0.00001 printfreq = 2
-    initRchain
-#incnfile = neb.chain.500 readRchain
-    nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
-		1  #redistribution frequency
-	    ]
-    nebrelax
-    finalcnfile = neb.chain.500 writeRchain
+} elseif { $status == 2 } {
+
+  # First mannually paste two neb_chain_${A}_${B}.totalsteps paths together
+  # which are created from status = 1, then perturb the path and nebrelax() 
+  set ttlstps 10
+  set bfld "../fem-1-$pbid-$meshid-$eqnType/"
+  set filein_1 [open "${bfld}neb_chain_0_2.${ttlstps}" r]
+  set filein_2 [open "${bfld}neb_chain_2_1.${ttlstps}" r]
+  set data_1 [ split [read $filein_1 ] "\n" ]
+  set data_2 [ split [read $filein_2 ] "\n" ]
+  close $filein_1
+  close $filein_2
+
+  set fileout [ open init_path.${ttlstps} w ]
+  # read in the straight initial path. perturb each node
+  set nchain_1 [ lindex $data_1 0 ] 
+  set nchain_2 [ lindex $data_2 0 ] 
+  # remove the middle connecting state
+  set nchain   [ expr $nchain_1+$nchain_2 ]
+  set nnodes   [ lindex $data_1 1 ]   
+  puts "nchain =  $nchain"
+  puts "nnodes =  $nnodes"
+  puts $fileout $nchain
+  puts $fileout $nnodes
+
+
+  for { set i 0 } { $i < [expr $nnodes] } { incr i 1 } {
+     set nd [ lindex $data_1 [expr $i+2] ]
+     puts $fileout $nd
   }
-} elseif { $status == 5 } {
+
+  for { set chain 0 } { $chain <= $nchain_1-1 } { incr chain 1 } {  
+    for { set node 0 } { $node < $nnodes } { incr node 1 } {
+      # read in rchain 
+      set data1 [ lindex $data_1 [expr 2+$nnodes+$chain*$nnodes+$node] ]
+      if { $data1 == "" } { 
+        break
+      }  
+      set xold [ lindex $data1 0 ]
+      set yold [ lindex $data1 1 ]
+      set zold [ lindex $data1 2 ] 
+      puts $fileout "$xold $yold $zold"
+    }
+  }
+
+  for { set chain 0 } { $chain <= $nchain_2 } { incr chain 1 } {  
+    for { set node 0 } { $node < $nnodes } { incr node 1 } {
+      # read in rchain 
+      set data2 [ lindex $data_2 [expr 2+$nnodes+$chain*$nnodes+$node] ]
+      if { $data2 == "" } { 
+        break
+      }  
+      set xold [ lindex $data2 0 ]
+      set yold [ lindex $data2 1 ]
+      set zold [ lindex $data2 2 ] 
+      puts $fileout "$xold $yold $zold"
+    }
+  }
+
+  close $fileout
+#  MD++ sleep 
+
+  # Mannually perturb initial path 0 -- 2 -- 1 by adding random modes to it
   MD++ RtoRref
-  
-  set ncpu [ MD++_Get numDomains ]
-  if { $ncpu < 1 } { set ncpu 1 }
-    puts "ncup = $ncpu"
-    
-    MD++ Slave_chdir
-    #set initNEBfile ../fem-0-$pbid-$meshid/NEBinit.cn
-    #set finalNEBfile ../fem-0-$pbid-$meshid/NEBfinal.cn 
-    set initNEBfile ../fem-0-$pbid-$meshid/stateA.cn
-    set finalNEBfile ../fem-0-$pbid-$meshid/stateB.cn 
+  MD++ saveH
+
+  set PI 3.1415926
+  set perturb 0.0005
+#  set perturb 0.0
+  set fileout [open init_path.${ttlstps} r] 
+  set data [ split [read $fileout ] \n]
+  close $fileout
+
+  # ntrials > 1 does not work. Need to figure this out 
+  set ntrials 1 
+  set Nend [ llength $data ]
+  for { set itrial 0 } { $itrial < $ntrials } { incr itrial 1 } { 
+    set fileout trial_path-${itrial}.chain.${ttlstps}
+    set fp [ open $fileout w ]
+    # read in the straight initial path. perturb each node
+    set nchain [lindex $data 0 ] 
+    set nnodes [lindex $data 1 ]   
+    puts "nchain =  $nchain"
+    puts "nnodes =  $nnodes"
+    puts $fp $nchain
+    puts $fp $nnodes
+
+    for { set i 0 } { $i < [expr $nnodes] } { incr i 1 } {
+       set data1 [ lindex $data [expr $i+2] ]
+       puts $fp $data1
+    }
+
+    for { set chain 0 } { $chain <= $nchain } { incr chain 1 } {  
+      for { set node 0 } { $node < $nnodes } { incr node 1 } {
+        # read in rchain 
+        set data1 [ lindex $data [expr 2+$nnodes+$chain*$nnodes+$node] ]
+        if { $data1 == "" } { 
+           break
+        }  
+        set xref [ MD++_Get Rref([expr $node*3]) ]
+        set xold [ lindex $data1 0 ]
+        set yold [ lindex $data1 1 ]
+        set zold [ lindex $data1 2 ] 
+               
+        set y $yold
+        set barlength 2.5
+        if { $chain != 0 && $chain != $nchain } {
+           set nmodes 10
+           for {set j 0 } { $j < $nmodes } { incr j 1 } {
+               set freq [expr int(rand()*3)+1 ]
+               set mag [expr rand()*$perturb]
+               set y [expr $y+$mag*sin(2*$PI*$freq/$barlength*$xref) ]
+           }
+        }
+	       
+        puts $fp "$xold $y $zold"
+      }
+    }
+    close $fp
+
+    # do neb relaxation with initial chain
+    MD++ RtoRref
+    MD++ restoreH
+    MD++ RHtoS
+
+    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn
     MD++ incnfile = $initNEBfile readcn saveH
     MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
     MD++ incnfile = $initNEBfile readcn setconfig1
 
-    # rename previous result files in order to not overwrite them
-    set check [ glob -nocomplain "stringrelax.chain.cn.cpu00" ]
-    set exist [ llength $check ]
-    if { $exist > 0 } {
-      for { set i 0 } { $i < $ncpu } { incr i 1 } {
-        set ival [ format %02d $i ]
-      exec cp stringrelax.chain.cn.cpu$ival Prev_stringrelax.chain.cn.cpu$ival
-      }
-       exec cp stringeng.out Prev_stringeng.out
-    }
-
-    set chainlength [expr $ncpu - 1]
-    MD++ chainlength = $chainlength  
-    MD++ timestep = 0.00001 printfreq = 1
-	    
-    MD++ nebspec = \[ 0 1 0 1 0 0 1 \] totalsteps = 10000 equilsteps = 10000
-    MD++ Broadcast_Atoms
-    MD++ Broadcast_FEM_Param
-    MD++ eval_parallel
-    MD++ fixallatoms  constrain_fixedatoms freeallatoms
-    if {0} {
-      for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
+    MD++ fixallatoms constrain_fixedatoms freeallatoms
+    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
         set bnd [ MD++_Get bNds($niter) ]
         set bid [ MD++_Get bTags($niter) ]
         if { $bid == 0 || $bid == 1 } {
-          puts "bnd = $bnd is fixed"
-          MD++ fixed($bnd) = 1	    
+             puts "bnd = $bnd is fixed"
+             MD++ fixed($bnd) = 1	    
         }
-      }
-      MD++ Broadcast_Atoms
     }
+  
+    MD++ { chainlength = 48 allocchain timestep = 0.00001 printfreq = 2 }
+    MD++ readrchainspec = $nchain
+    MD++ incnfile = $fileout  readRchain
+    set totalsteps 5000
+    set chainout "path-${itrial}-neb.chain.$totalsteps"
+    MD++ finalcnfile = $chainout
+    MD++ totalsteps = $totalsteps
+    MD++ { nebspec = [ 0 1 ]  nebrelax writeRchain }
+    file mkdir "TRIAL-PATH-${itrial}"
+#   exec mv $fileout nebeng.out  "path-${itrial}-neb.chain.${totalsteps}" gp_rawdata.out strain12.out strain11.out strain22.out energy.out "TRIAL-PATH-${itrial}/"
+    exec mv $fileout nebeng.out "path-${itrial}-neb.chain.${totalsteps}" "TRIAL-PATH-${itrial}/"
+  }
+  MD++ quit
 
-    MD++ allocchain_parallel initRchain_parallel
-
-#   if { $exist > 0 } {
-#     MD++ incnfile = stringrelax.chain.cn readRchain_parallel
-#   }
-    MD++ stringrelax_parallel_2
-#   MD++ stringrelax_parallel
-    MD++ finalcnfile = stringrelax.chain.cn writeRchain_parallel
-    if { $ncpu == 1 }   {
-       MD++ quit
-    } else {
-       MD++ quit_all
-    }
-			    
 # Start from an earlier chain of states. 
 } elseif { $status == 6 } {
-  MD++ RtoRref
-  
-  puts "meshfolder = $meshfolder"
-  set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-3.cn 
-  
-  MD++ incnfile = $initNEBfile readcn saveH
-  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
-  MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-
-  for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-    set bnd [ MD++_Get bNds($niter) ]
-    set bid [ MD++_Get bTags($niter) ]
-    if { $bid == 0 || $bid == 1 } {
-      puts "bnd = $bnd is fixed"
-      MD++ fixed($bnd) = 1	    
-    }
-  }
-
-  MD++ readrchainspec = 48
-  MD++ {  chainlength = 48 allocchain   totalsteps = 1500
-    timestep = 0.00001 printfreq = 2
-    incnfile = ../../scripts/fem/fe-meshes/M11/membrane2d_neb.chain.500 readRchain
-  }
-  MD++ { 
-    nebspec = [ 0 1] 
-    nebrelax
-    finalcnfile = neb.chain.1000 writeRchain
-  }
-#same as status = 4, neb for 3d.
-} elseif { $status == 7 } {
-  MD++ RtoRref
-  #set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  #set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-2.cn 
-  
-  set initNEBfile ../fem-0-$pbid-$meshid/stateA.cn
-  set finalNEBfile ../fem-0-$pbid-$meshid/stateB.cn 
-  
-  MD++ incnfile = $initNEBfile readcn saveH
-  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
-  MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-  
-  if {0} {
-    for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      if { $bid == 0 || $bid == 1 } {
-        puts "bnd = $bnd is fixed"
-        MD++ fixed($bnd) = 1	    
-      }
-    }
-  }
-
-  MD++ {  chainlength = 48 allocchain   totalsteps = 500000
-#500
-#chainlength = 20 allocchain   totalsteps = 500
-    timestep = 0.00001 printfreq = 2
-    initRchain
-#incnfile = neb.chain.500 readRchain
-    nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
-		    1  #redistribution frequency
-	      ]
-    nebrelax
-    finalcnfile = neb.chain.500000 writeRchain
-  }
 
 #same as status = 7, neb for 3d, pbid = 7, mesh13. .
 } elseif { $status == 8 } {
@@ -799,6 +618,9 @@ puts "I am here 8"
        nebrelax
        finalcnfile = neb.chain.1500 writeRchain
   }
+
+
+
 } elseif { $status == 19 } {
 
   MD++ setnolog
@@ -852,8 +674,8 @@ puts "I am here 8"
   MD++ chainlength = $total_no
 #  MD++ incnfile = "../fem-0-4-7/NEBinit.cn" readcn  saveH
 #  MD++ incnfile = "../fem-5-4-7/stringrelax.chain.cn" 
-  MD++ incnfile = "../fem-0-$pbid-$meshid/NEBinit.cn" readcn  saveH
-  MD++ incnfile = "../fem-5-$pbid-$meshid/stringrelax.chain.cn" 
+  MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit.cn" readcn  saveH
+  MD++ incnfile = "../fem-5-$pbid-$meshid-$eqnType/stringrelax.chain.cn" 
   MD++ input = $chain_no  readRchain_parallel_toCN  RHtoS
   #MD++ clearR0 refreshnnlist eval quit
   setup_window
@@ -907,8 +729,8 @@ puts "I am here 8"
 # visualization of single cpu nebrelax.
 } elseif { $status == 23 } {
   MD++ setnolog
-  MD++ incnfile = "../29July16-curve-paths-5/fem-0-$pbid-$meshid/NEBinit-1.cn" readcn saveH setconfig1
-  MD++ incnfile = "../29July16-curve-paths-5/fem-0-$pbid-$meshid/NEBinit-2.cn" readcn restoreH SHtoR setconfig2
+  MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn" readcn saveH setconfig1
+  MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn" readcn restoreH SHtoR setconfig2
   if {0} {
     setup_window
     MD++ NCS = 8 eval calcentralsymmetry
@@ -918,12 +740,10 @@ puts "I am here 8"
     MD++ sleep
     exitmd
   }
-  set total_no 48
+  set total_no 24
   MD++ zipfiles = 0
   for { set iter 0 } { $iter <= $total_no } { incr iter 1 } {
-#   MD++ incnfile ="../fem-7-$pbid-$meshid/neb.chain.500" readRchain
-    MD++ incnfile ="../29July16-curve-paths-5/fem-6-4-8/neb.chain.1000" readRchain
-     # set chain number
+    MD++ incnfile ="../fem-1-$pbid-$meshid-$eqnType/neb.chain.500" readRchain
     set chain_no $iter
     MD++ input = $iter  copyRchaintoCN eval
     if { $iter == 0 } {
