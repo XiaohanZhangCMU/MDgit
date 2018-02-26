@@ -8,8 +8,8 @@ source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 proc initmd { status {T 0} {epVAL 0} {opt 0} {alt 0}  } {
 MD++ setnolog
 MD++ setoverwrite
-MD++ dirname = runs/pydxa/cu/
-MD++ atommass = 63.546 # (g/mol)
+MD++ dirname = runs/pydxa/ni/
+MD++ atommass = 58.71 # (g/mol)
 }
 
 #------------------------------------------------------------
@@ -18,13 +18,13 @@ proc readpot { } { MD++ {
 #Read in potential file
 #
 #potfile = $::env(MDPLUS_DIR)/potentials/w_pot readpot $$$$$$$$$$$$$$$$$$$$$$$
-potfile = ~/Planet/Libs/MD++.svn/potentials/EAMDATA/eamdata.CuMishin
-eamgrid = 5000 readeam NNM = 600
+potfile = "~/Planet/Libs/MD++UMB.svn3/potentials/EAMDATA/eamdata.Ni.Rao99"
+eamgrid = 5000 readeam NNM = 200
 } }
 
 # make sure the coordinate is right hand sided.
 proc make_perfect_crystal { status nx ny nz } {
-    MD++ crystalstructure = face-centered-cubic latticeconst = 3.615 #(A) for Cu
+    MD++ crystalstructure = face-centered-cubic latticeconst = 3.52 #(A) for Cu
     if { $status == 0 } { 
       MD++ latticesize = \[  1 -2 1  $nx  1 1 1  $ny  1 0 -1  $nz \]
     } else { 
@@ -34,7 +34,6 @@ proc make_perfect_crystal { status nx ny nz } {
     MD++ makecrystal #finalcnfile = perf.cn writecn #eval
 }
 
-#0: Si. 1 : Ge.
 proc set_all_atoms_species { id } {
     MD++ fixedallatoms
     MD++ input = $id setfixedatomsspecies
@@ -205,7 +204,7 @@ proc make_ellipse_dislocation_loop { x0 y0 z0 epsilon } {
     set Ly [MD++_Get H_22]
     set Lz [MD++_Get H_33]
     set store 1
-    set a 3.615
+    set a 3.52
     set bx 0.3333
     set by 0
     set bz 0
@@ -360,7 +359,7 @@ if { $status == 0 } {
       make_ellipse_dislocation_loop $x0 $y0 $z0 $epsilon
       MD++ incnfile = "0K_${strain0}_relaxed.cn" readcn
       MD++ commit_storedr
-      MD++ finalcnfile = "init_cu_${status}_${index}.lammps" writeLAMMPS
+      MD++ finalcnfile = "init_ni_${status}_${index}.lammps" writeLAMMPS
       set strain $strain0
       for { set loaditer 0 } { $loaditer <= $maxloaditers } { incr loaditer 1 } { 
         set localmaxiter 100
@@ -407,8 +406,8 @@ if { $status == 0 } {
         MD++ relax
         set strain [ expr $strain+0.001 ]
         set strain [format "%.4f" $strain]
-        MD++ finalcnfile = "cu_${status}_${index}.cn" writecn
-        MD++ finalcnfile = "cu_${status}_${index}.lammps" writeLAMMPS
+        MD++ finalcnfile = "ni_${status}_${index}.cn" writecn
+        MD++ finalcnfile = "ni_${status}_${index}.lammps" writeLAMMPS
         set index [expr $index + 1]
       }
     }

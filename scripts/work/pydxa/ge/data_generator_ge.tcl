@@ -8,25 +8,33 @@ source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 proc initmd { status {T 0} {epVAL 0} {opt 0} {alt 0}  } {
 MD++ setnolog
 MD++ setoverwrite
-MD++ dirname = runs/pydxa/cu/
-MD++ atommass = 63.546 # (g/mol)
+MD++ dirname = runs/pydxa/ge/
+set myname [ MD++_Get "myname" ]
+readmeam-according-to-myname $myname
+MD++ NNM = 200
+MD++ atommass = 72.64 # (g/mol)
 }
 
 #------------------------------------------------------------
-proc readpot { } { MD++ {
-#--------------------------------------------
-#Read in potential file
-#
-#potfile = $::env(MDPLUS_DIR)/potentials/w_pot readpot $$$$$$$$$$$$$$$$$$$$$$$
-potfile = ~/Planet/Libs/MD++.svn/potentials/EAMDATA/eamdata.CuMishin
-eamgrid = 5000 readeam NNM = 600
+proc readmeam-lammps { } { 
+#Read in MEAM potential (Baskes format)
+MD++ meamfile = "~/Planet/Libs/MD++UMB.svn3/potentials/MEAMDATA/meamf"
+MD++ nspecies = 2 element0 = "Siz" element1 = "Ge" 
+MD++ atommass = 28.0855 # (g/mol)
+MD++ {
+rcut = 4.5  readMEAM
+NNM = 300
 } }
 
 # make sure the coordinate is right hand sided.
 proc make_perfect_crystal { status nx ny nz } {
-    MD++ crystalstructure = face-centered-cubic latticeconst = 3.615 #(A) for Cu
+    MD++ crystalstructure = diamond-cubic latticeconst = 5.4309529817532409 #(A) for Si
     if { $status == 0 } { 
+      MD++ latticesize = \[  1 1 0  $nx  -1 1 0  $ny  0 0 1  $nz \]
+    } elseif { $status == 1 } {
       MD++ latticesize = \[  1 -2 1  $nx  1 1 1  $ny  1 0 -1  $nz \]
+    } elseif { $status == 2 } {
+      MD++ latticesize = \[  1 0 0  $nx  0 1 0  $ny  0 0 1  $nz \]
     } else { 
       puts "Undefined for status = $status"
       MD++ quit
@@ -44,7 +52,7 @@ proc set_all_atoms_species { id } {
 #--------------------------------------------
 proc relax_fixbox { } { MD++ {
 # Conjugate-Gradient relaxation
-conj_ftol = 2e-6 conj_itmax = 1000 conj_fevalmax = 30
+conj_ftol = 2e-6 conj_itmax = 1000 conj_fevalmax = 50
 conj_fixbox = 1
 relax
 } }
@@ -111,6 +119,27 @@ proc exitmd { } { MD++ quit }
 #end of proc exitmd
 #--------------------------------------------
 
+
+proc readmeam-according-to-myname { myname  } {
+ if { [ string match "*baskes*" $myname ] } {
+  puts "readmeam-baskes"
+  readmeam-baskes 
+ } elseif { [ string match "*lammps*" $myname ] } {
+  puts "readmeam-lammps"
+  readmeam-lammps 
+ } elseif { [ string match "*meam*" $myname ] } {
+  puts "readmeam"
+  readmeam
+ } elseif { [ string match "*eam*" $myname ] } {
+  puts "readeam"
+  readeam
+ } else {
+  puts "not an eam potential, not reading any files"
+ }
+}
+
+
+#--------------------------------------------
 proc setup_md { } { MD++ {     
 T_OBJ = 300 #Kelvin #add by xiaohan
 
@@ -199,55 +228,104 @@ proc datafile_process { filename index frac fracend operation } {
    return $LIST
 }
 
+proc make_hexagon_shuffle_loop { x0 y0 z0 epsilon } { 
+    set store 1
+    set nu 0.28
+    set a 5.658
+
+    set bx  [expr 0.5/sqrt(2)]
+    set by  [expr 0.5/sqrt(2)]
+    set bz  [expr -0.5 ] 
+
+    set Lx [MD++_Get H_11]
+    set Ly [MD++_Get H_22]
+    set Lz [MD++_Get H_33]
+
+    set espratio [expr 1 ]
+    set w [expr $Ly * $epsilon]
+    set w [expr $w * 0.65]
+    set h [expr $w * $espratio]
+    set angle 0.9553
+
+    set RDx 0.70749
+    set RDz -1
+
+    #calculate the middle point of the loop, which should sit on the shuffle/glide plane
+    set P0y [expr $y0 ]
+    set P0x [expr $x0 * $Lx]
+    set P0z [expr $z0 * $Lz ]
+    
+    set P1y $P0y
+    set P1x [expr $P0x + $RDx * $h]
+    set P1z [expr $P0z + $RDz * $h]
+    
+    set y1 [expr $P0y - $w]
+    set x1 [expr $P0x ]
+    set z1 [expr $P0z ]
+
+    set y2 [expr $P0y + $w]
+    set x2 [expr $P0x ]
+    set z2 [expr $P0z ]
+
+    set y3 [expr $P1y + 0.55*$w]
+    set x3 [expr $P1x ]
+    set z3 [expr $P1z ]
+
+    set y4 [expr $P1y - 0.55*$w]
+    set x4 [expr $P1x ]
+    set z4 [expr $P1z ]
+
+    puts "x1 = $x1"
+    puts "y1 = $y1"
+    puts "z1 = $z1"
+
+    puts "x2 = $x2"
+    puts "y2 = $y2"
+    puts "z2 = $z2"
+
+    puts "x3 = $x3"
+    puts "y3 = $y3"
+    puts "z3 = $z3"
+
+    puts "x4 = $x4"
+    puts "y4 = $y4"
+    puts "z4 = $z4"
+
+    puts "w = $w"
+    puts "h = $h"
+
+    puts "Lx = $Lx"
+    puts "Ly = $Ly"
+    puts "Lz = $Lz"
+    
+    MD++ input = \[ 1 $store $nu $a $bx $by $bz 4 $x1 $y1 $z1 $x2 $y2 $z2 $x3 $y3 $z3 $x4 $y4 $z4 \] 
+    MD++ makedislpolygon
+}
 
 proc make_ellipse_dislocation_loop { x0 y0 z0 epsilon } {
     set Lx [MD++_Get H_11]
     set Ly [MD++_Get H_22]
     set Lz [MD++_Get H_33]
     set store 1
-    set a 3.615
-    set bx 0.3333
-    set by 0
-    set bz 0
-
-    set bx 0
-    set by 0
-    set bz [expr -sqrt(2)/2 ]
-    
-# 0.5[0 -1 1] = 1/sqrt(6) * [1 -2 1] +  1/sqrt(3) * [1 1 1]  + 1/sqrt(2)*[1 0 -1] : Full
-    set bx [expr 0.5*sqrt(6)/2]
-    set by 0
-    set bz [expr -0.5*sqrt(2)/2 ]
-
-# 0.5[0 -1 1] = 1/6[-1 -1 2] + 1/6[1 -2 1]
-# 1/6[ -1 -1 2 ] = 1/sqrt(6) * [1 -2 1] * (0.5)  +  1/sqrt(3) * [1 1 1] *(0)  + 1/sqrt(2)*[1 0 -1] *(-1.5)
-    set bx [expr sqrt(6)*0.5/6.0]
-    set by 0
-    set bz [expr sqrt(2)*(-1.5)/6.0]
-
+    set a 5.658
     set bx [expr 1/sqrt(6) ]
     set by 0
     set bz 0
-
     set lx 1
     set ly 0
     set lz 0
     set nx 0
     set ny 1
     set nz 0
-    #set y 1.0435
-    set x [ expr $x0*$Lx ]
-    set y [ expr $y0*$Ly ]
-    set z [ expr $z0*$Lz ] 
-#0.0300 x
-    #set epsilon 0.145
+    set x 0 
+    set y $y0
+    set z 0
 
     set Ra [expr $Lx * $epsilon]
     set Rb [expr 0.8*$Ra]
-    MD++ input= \[ 1 $Ra $Rb $a $bx $by $bz $lx $ly $lz $nx $ny $nz $x $y $z $store \] 
+    MD++ input= \[ 1 $Ra $Rb $a $bx $by $bz $lx $ly $lz $nx $ny $nz $x0 $y0 $z0 $store \] 
     MD++ makedislellipse  
 }
-
 
 #*******************************************
 # Main program starts here
@@ -280,69 +358,35 @@ puts "flag = $flag"
 
 if { $argc <= 3 } {
  set opt 0
-} elseif { $argc > 3 } { set opt [lindex $argv 3] }
+} elseif { $argc > 3 } {
+ set opt [lindex $argv 3]
+}
 puts "opt = $opt"
 
 if { $status == 0 } {
-# \[  1 -2 1  $nx  1 1 1  $ny  1 0 -1  $nz \]
+# \[  1 1 0  $nx  -1 1 0  $ny  0 0 1  $nz \]
 
   initmd $status
-  readpot
-  make_perfect_crystal $status 8 6 13
+  make_perfect_crystal $status 8 8 12
   MD++ finalcnfile = "0K_0.0_relaxed.cn" writecn
- # setup_window
- # openwindow
+  setup_window
+  openwindow
   set H11_0 [ MD++_Get H_11 ] ; 
   set H22_0 [ MD++_Get H_22 ] ; 
   set H33_0 [ MD++_Get H_33 ] ;
   set getcompressedconfig 1
-  set strain 0.07
 
   if { $getcompressedconfig == 1 } { 
     set maxitereps 200
     set maxiter    100
-    set C11 520000  
-    set C44 160000
-    set factor 0.7
-    set H12_fix [ expr 1.0*$H22_0*$strain ]
-    MD++ H_12 = $H12_fix
-    for { set iter 0 } { $iter <= $maxiter } { incr iter 1 } {
-
-      set sig_xx [ MD++_Get TSTRESSinMPa_xx ] ;
-      set sig_yy [ MD++_Get TSTRESSinMPa_yy ] ;
-      set sig_zz [ MD++_Get TSTRESSinMPa_zz ] ;
-      set sig_xy [ MD++_Get TSTRESSinMPa_xy ] ;
-      set sig_xz [ MD++_Get TSTRESSinMPa_xz ] ;
-      set sig_yz [ MD++_Get TSTRESSinMPa_yz ] ;
-      set e_xx [ expr $sig_xx / $C11 ] ;
-      set e_yy [ expr $sig_yy / $C11 ] ; 
-      set e_zz [ expr $sig_zz / $C11 ] ;
-      set e_xy [ expr $sig_xy / $C44 ] ;
-      set e_xz [ expr $sig_xz / $C44 ] ; 
-      set e_yz [ expr $sig_yz / $C44 ] ;
-
-      set H11_cur [ MD++_Get H_11 ] ; 
-      set H22_cur [ MD++_Get H_22 ] ;
-      set H33_cur [ MD++_Get H_33 ] ;
-
-      set H11_new [ expr ${H11_cur}*(1.0+$e_xx*$factor) ] ; 
-      MD++ H_11 = ${H11_new}
-      set H22_new [ expr ${H22_cur}*(1.0+$e_yy*$factor) ] ; 
-      MD++ H_22 = ${H22_new}
-      set H33_new [ expr ${H33_cur}*(1.0+$e_zz*$factor) ] ;    
-      MD++ H_33 = ${H33_new}
-      set H12_new [ MD++_Get H_12]
-
-      if { $iter == [expr $maxiter + 1] } {
-            MD++ conj_ftol = 2e-6 conj_fixbox = 1 relax
-      }
-      MD++ eval
-   }
-   relax_fixbox
-   MD++ finalcnfile = "0K_${strain}_relaxed.cn" writecn
-   MD++ finalcnfile = "0K_${strain}_relaxed.lammps" writeLAMMPS
+    set strain 0.07
+    set H11_fix [ expr $H11_0*(1.0-$strain) ]
+    MD++ H_11 = $H11_fix
+    MD++ relax eval
+    set H11_fix [ MD++_Get H_11 ] ; set H22_new [ MD++_Get H_22 ] ; set H33_new [ MD++_Get H_33 ] 
+    set H31_cur [ MD++_Get H_31 ] ; set H12_cur [ MD++_Get H_12 ] ; set H23_new [ MD++_Get H_23 ]
+    MD++ finalcnfile = "0K_${strain}_relaxed.cn" writecn
   }
-
 
   set maxitereps 10
   set maxiters 10
@@ -350,69 +394,92 @@ if { $status == 0 } {
   set index 0
   set strain0 $strain
   for { set itereps 0 } { $itereps <= $maxitereps } { incr itereps 1 } {
-    set x0 0
-    set y0 [ expr -0.4 + $itereps * (0.5-(-0.4))/$maxitereps ] 
-    puts "y0 = $y0"
-    set z0 0
+    set y0 0
+    set x0 [ expr -0.4 + $itereps * (0.5-(-0.4))/$maxitereps ] 
+    set z0 [ expr -0.4 + $itereps * (0.5-(-0.4))/$maxitereps ]
     for { set iter 0 } { $iter <= $maxiters } {incr iter 1 } { 
-      set epsilon [ expr 0.05 + $iter * (0.4-0.1)/$maxiters ]
+      set epsilon [ expr 0.35 + $iter * (0.4-0.2)/$maxiters ]
       MD++ incnfile = "0K_0.0_relaxed.cn" readcn
-      make_ellipse_dislocation_loop $x0 $y0 $z0 $epsilon
+      make_hexagon_shuffle_loop $x0 $y0 $z0 $epsilon
       MD++ incnfile = "0K_${strain0}_relaxed.cn" readcn
       MD++ commit_storedr
-      MD++ finalcnfile = "init_cu_${status}_${index}.lammps" writeLAMMPS
+      MD++ finalcnfile = "init_ge_${status}_${index}.lammps" writeLAMMPS
       set strain $strain0
       for { set loaditer 0 } { $loaditer <= $maxloaditers } { incr loaditer 1 } { 
-        set localmaxiter 100
-        set C11 520000  
-        set C44 160000
-        set factor 0.7
-        set H12_fix [ expr 1.0*$H22_0*$strain ]
-        MD++ H_12 = $H12_fix
-        for { set localiter 0 } { $localiter <= $localmaxiter } { incr localiter 1 } {
-
-          set sig_xx [ MD++_Get TSTRESSinMPa_xx ] ;
-          set sig_yy [ MD++_Get TSTRESSinMPa_yy ] ;
-          set sig_zz [ MD++_Get TSTRESSinMPa_zz ] ;
-          set sig_xy [ MD++_Get TSTRESSinMPa_xy ] ;
-          set sig_xz [ MD++_Get TSTRESSinMPa_xz ] ;
-          set sig_yz [ MD++_Get TSTRESSinMPa_yz ] ;
-          set e_xx [ expr $sig_xx / $C11 ] ;
-          set e_yy [ expr $sig_yy / $C11 ] ; 
-          set e_zz [ expr $sig_zz / $C11 ] ;
-          set e_xy [ expr $sig_xy / $C44 ] ;
-          set e_xz [ expr $sig_xz / $C44 ] ; 
-          set e_yz [ expr $sig_yz / $C44 ] ;
-
-          set H11_cur [ MD++_Get H_11 ] ; 
-          set H22_cur [ MD++_Get H_22 ] ;
-          set H33_cur [ MD++_Get H_33 ] ;
-
-          set H11_new [ expr ${H11_cur}*(1.0+$e_xx*$factor) ] ; 
-          MD++ H_11 = ${H11_new}
-          set H22_new [ expr ${H22_cur}*(1.0+$e_yy*$factor) ] ; 
-          MD++ H_22 = ${H22_new}
-          set H33_new [ expr ${H33_cur}*(1.0+$e_zz*$factor) ] ;    
-          MD++ H_33 = ${H33_new}
-          set H12_new [ MD++_Get H_12]
-
-          if { $iter == [expr $maxiter + 1] } {
-                MD++ conj_ftol = 2e-6 conj_fixbox = 1 relax
-          }
-          MD++ eval
-        }
+	
+        set H11_fix [ expr $H11_0 * (1.0 -$strain)]
+        MD++ H_11 = $H11_fix
         MD++ conj_ftol = 2e-6 
         MD++ conj_fevalmax = 10
         MD++ conj_fixbox = 1
         MD++ relax
         set strain [ expr $strain+0.001 ]
         set strain [format "%.4f" $strain]
-        MD++ finalcnfile = "cu_${status}_${index}.cn" writecn
-        MD++ finalcnfile = "cu_${status}_${index}.lammps" writeLAMMPS
+        MD++ finalcnfile = "ge_${status}_${index}.cn" writecn
+        MD++ finalcnfile = "ge_${status}_${index}.lammps" writeLAMMPS
         set index [expr $index + 1]
       }
     }
   }
+
+  exitmd
+
+} elseif { $status == 1 } {
+# \[  1 -2 1  $nx  1 1 1  $ny  1 0 -1  $nz \]
+
+  initmd $status
+  make_perfect_crystal $status 8 8 12
+  MD++ finalcnfile = "0K_0.0_relaxed.cn" writecn
+  setup_window
+  openwindow
+  set H11_0 [ MD++_Get H_11 ] ; 
+  set H22_0 [ MD++_Get H_22 ] ; 
+  set H33_0 [ MD++_Get H_33 ] ;
+  set getcompressedconfig 1
+
+  if { $getcompressedconfig == 1 } { 
+    set maxitereps 200
+    set maxiter    100
+    set strain 0.07
+    set H11_fix [ expr $H11_0*(1.0-$strain) ]
+    MD++ H_11 = $H11_fix
+    MD++ relax eval
+    set H11_fix [ MD++_Get H_11 ] ; set H22_new [ MD++_Get H_22 ] ; set H33_new [ MD++_Get H_33 ] 
+    set H31_cur [ MD++_Get H_31 ] ; set H12_cur [ MD++_Get H_12 ] ; set H23_new [ MD++_Get H_23 ]
+    MD++ finalcnfile = "0K_${strain}_relaxed.cn" writecn
+  }
+
+  set maxitereps 10
+  set maxiters 10
+  set max_load_iters 30
+  set index 0
+  for { set itereps 0 } { $itereps <= $maxitereps } { incr itereps 1 } {
+    set x0 0
+    set y0 [ expr -0.4 + $itereps * (0.5-(-0.4))/$maxitereps ] 
+    set z0 0
+    for { set iter 0 } { $iter <= $maxiters } {incr iter 1 } { 
+      set epsilon [ expr 0.35 + $iter * (0.4-0.2)/$maxiters ]
+      MD++ incnfile = "0K_0.0_relaxed.cn" readcn
+      make_ellipse_dislocation_loop $x0 $y0 $z0 $epsilon
+      MD++ incnfile = "0K_${strain}_relaxed.cn" readcn
+      MD++ commit_storedr
+      MD++ finalcnfile = "init_ge_${status}_${index}.lammps" writeLAMMPS
+      for {set load_iter 0} {$load_iter<=$max_load_iters} {incr load_iter 1} { 
+	set H11_fix [ expr $H11_0 * (1.0 -$strain)]
+	MD++ H_11 = $H11_fix
+        MD++ conj_ftol = 2e-6 
+	MD++ conj_fevalmax = 10
+        MD++ conj_fixbox = 1
+        MD++ relax
+        set strain [ expr $strain+0.001 ]
+        set strain [format "%.4f" $strain]
+        MD++ finalcnfile = "ge_${status}_${index}.cn" writecn
+        MD++ finalcnfile = "ge_${status}_${index}.lammps" writeLAMMPS
+        set index [expr $index + 1]
+      }
+    }
+  }
+
   exitmd
 
 } elseif { $status == 20 } {

@@ -327,84 +327,6 @@ proc make_ellipse_dislocation_loop { x0 y0 z0 epsilon } {
     MD++ makedislellipse  
 }
 
-proc make_110_dislocation_loop { x0 y0 z0 flag epsilon } { 
-    set store 1
-    set nu 0.28
-    set a 5.4309529817532409
-
-    set bx  [expr  0.5]
-    set by  [expr  0 ]
-    set bz  [expr -0.5 ] 
-
-    set Lx [MD++_Get H_11]
-    set Ly [MD++_Get H_22]
-    set Lz [MD++_Get H_33]
-
-    set espratio [expr 1 ]
-       #first generate the perfect lattice and visualize with ovito
-       #pick one atoms above slip plane, one below. both on top face
-       #put their real cooardinate here, 
-
-    set w [expr $Ly * $epsilon]
-    set w [expr $w * 0.85]
-    set h [expr $w * $espratio]
-    set angle 0.9553
-
-    set RDx [expr 0.2*$Lx/0.119/$Lz]
-    set RDz -1
-    #calculate the middle point of the loop, which should sit on the shuffle/glide plane
-    set P0y [expr  0  ]
-    set P0x [expr  (-0.1169-0.1334)/2.0*$Lx - $RDx * 0.1*$Lz]
-    set P0z [expr   (0.3671+0.3571)/2.0*$Lz - $RDz * 0.1*$Lz]
-    
-    set P1y $P0y
-    set P1x [expr $P0x + $RDx * $h]
-    set P1z [expr $P0z + $RDz * $h]
-    
-    set y1 [expr $P0y - $w]
-    set x1 [expr $P0x ]
-    set z1 [expr $P0z ]
-
-    set y2 [expr $P0y + $w]
-    set x2 [expr $P0x ]
-    set z2 [expr $P0z ]
-
-    set y3 [expr $P1y + 0.55*$w]
-    set x3 [expr $P1x ]
-    set z3 [expr $P1z ]
-
-    set y4 [expr $P1y - 0.55*$w]
-    set x4 [expr $P1x ]
-    set z4 [expr $P1z ]
-
-    puts "x1 = $x1"
-    puts "y1 = $y1"
-    puts "z1 = $z1"
-
-    puts "x2 = $x2"
-    puts "y2 = $y2"
-    puts "z2 = $z2"
-
-    puts "x3 = $x3"
-    puts "y3 = $y3"
-    puts "z3 = $z3"
-
-    puts "x4 = $x4"
-    puts "y4 = $y4"
-    puts "z4 = $z4"
-
-    puts "w = $w"
-    puts "h = $h"
-
-    puts "Lx = $Lx"
-    puts "Ly = $Ly"
-    puts "Lz = $Lz"
-    
-    MD++ input = \[ 1 $store $nu $a $bx $by $bz 4 $x1 $y1 $z1 $x2 $y2 $z2 $x3 $y3 $z3 $x4 $y4 $z4 \] 
-    MD++ makedislpolygon
-}
-
-
 #*******************************************
 # Main program starts here
 #*******************************************
@@ -466,10 +388,11 @@ if { $status == 0 } {
     MD++ finalcnfile = "0K_${strain}_relaxed.cn" writecn
   }
 
-
-  set maxitereps 5
-  set maxiters 5
+  set maxitereps 10
+  set maxiters 10
+  set maxloaditers 30
   set index 0
+  set strain0 $strain
   for { set itereps 0 } { $itereps <= $maxitereps } { incr itereps 1 } {
     set y0 0
     set x0 [ expr -0.4 + $itereps * (0.5-(-0.4))/$maxitereps ] 
@@ -478,13 +401,24 @@ if { $status == 0 } {
       set epsilon [ expr 0.35 + $iter * (0.4-0.2)/$maxiters ]
       MD++ incnfile = "0K_0.0_relaxed.cn" readcn
       make_hexagon_shuffle_loop $x0 $y0 $z0 $epsilon
-      MD++ incnfile = "0K_${strain}_relaxed.cn" readcn
+      MD++ incnfile = "0K_${strain0}_relaxed.cn" readcn
       MD++ commit_storedr
       MD++ finalcnfile = "init_si_${status}_${index}.lammps" writeLAMMPS
-      relax_fixbox
-      MD++ finalcnfile = "si_${status}_${index}.cn" writecn
-      MD++ finalcnfile = "si_${status}_${index}.lammps" writeLAMMPS
-      set index [expr $index + 1]
+      set strain $strain0
+      for { set loaditer 0 } { $loaditer <= $maxloaditers } { incr loaditer 1 } { 
+	
+        set H11_fix [ expr $H11_0 * (1.0 -$strain)]
+        MD++ H_11 = $H11_fix
+        MD++ conj_ftol = 2e-6 
+        MD++ conj_fevalmax = 10
+        MD++ conj_fixbox = 1
+        MD++ relax
+        set strain [ expr $strain+0.001 ]
+        set strain [format "%.4f" $strain]
+        MD++ finalcnfile = "si_${status}_${index}.cn" writecn
+        MD++ finalcnfile = "si_${status}_${index}.lammps" writeLAMMPS
+        set index [expr $index + 1]
+      }
     }
   }
 
@@ -515,9 +449,9 @@ if { $status == 0 } {
     MD++ finalcnfile = "0K_${strain}_relaxed.cn" writecn
   }
 
-
-  set maxitereps 5
-  set maxiters 5
+  set maxitereps 10
+  set maxiters 10
+  set max_load_iters 30
   set index 0
   for { set itereps 0 } { $itereps <= $maxitereps } { incr itereps 1 } {
     set x0 0
@@ -530,10 +464,19 @@ if { $status == 0 } {
       MD++ incnfile = "0K_${strain}_relaxed.cn" readcn
       MD++ commit_storedr
       MD++ finalcnfile = "init_si_${status}_${index}.lammps" writeLAMMPS
-      relax_fixbox
-      MD++ finalcnfile = "si_${status}_${index}.cn" writecn
-      MD++ finalcnfile = "si_${status}_${index}.lammps" writeLAMMPS
-      set index [expr $index + 1]
+      for {set load_iter 0} {$load_iter<=$max_load_iters} {incr load_iter 1} { 
+	set H11_fix [ expr $H11_0 * (1.0 -$strain)]
+	MD++ H_11 = $H11_fix
+        MD++ conj_ftol = 2e-6 
+	MD++ conj_fevalmax = 10
+        MD++ conj_fixbox = 1
+        MD++ relax
+        set strain [ expr $strain+0.001 ]
+        set strain [format "%.4f" $strain]
+        MD++ finalcnfile = "si_${status}_${index}.cn" writecn
+        MD++ finalcnfile = "si_${status}_${index}.lammps" writeLAMMPS
+        set index [expr $index + 1]
+      }
     }
   }
 
