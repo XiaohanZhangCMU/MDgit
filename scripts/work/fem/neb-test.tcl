@@ -238,7 +238,7 @@ if { $status == 0 } {
     set y_curve  0
     set ic_preparing 0
 
-    MD++ incnfile = "NEBinit-1.cn" readcn 
+    MD++ incnfile = "NEBinit-0.cn" readcn 
     MD++ eval plot sleep 
     # MD++ incnfile = "x-curve.cn" readcn
     # MD++ incnfile = "y-curve-large-152.cn" readcn
@@ -369,14 +369,14 @@ if { $status == 0 } {
     MD++ y_eigen_zbound_min = -10
     MD++ y_eigen_zbound_max =  0
 
-    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
-    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn
+    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn 
 
     MD++ incnfile = $initNEBfile readcn saveH
     MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
     MD++ incnfile = $initNEBfile readcn setconfig1
     MD++ fixallatoms  constrain_fixedatoms freeallatoms
-    MD++ {  chainlength = 24 allocchain   totalsteps = 5000
+    MD++ {  chainlength = 24 allocchain   totalsteps = 1
       timestep = 0.00001 printfreq = 10
       initRchain
       #incnfile = neb.chain.500 readRchain
@@ -728,6 +728,7 @@ if { $status == 0 } {
 
 # visualization of single cpu nebrelax.
 } elseif { $status == 23 } {
+  MD++ RtoRref
   MD++ setnolog
   MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn" readcn saveH setconfig1
   MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn" readcn restoreH SHtoR setconfig2

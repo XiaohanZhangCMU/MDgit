@@ -7264,6 +7264,7 @@ void MDFrame::calChainForce(int n, int relax_surround, double *Ec)
         call_potential();
         Ec[j]=_EPOT;
  
+	INFO_Printf("j = %d, Ec[%d] = %g, s = %g, \n", j, j, Ec[j], s);
         /* Put atomic forces to _Fc array */
         for(i=0;i<n;i++)
         {
@@ -7534,6 +7535,7 @@ void MDFrame::nebrelax()
    
     /* calculate center-of-mass shift from _SR1 (state A) to _SR2 (state B) */ 
     caldscom12();
+
     /* compute current constrain value */
     constrain_dist=0; 
     for(i=0;i<n;i++)
