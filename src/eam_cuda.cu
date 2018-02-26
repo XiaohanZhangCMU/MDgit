@@ -154,10 +154,9 @@ __device__ double spline1(double* _d_spline_coeff,int ind, double qq)
   return fp;
 }
 
+//#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
 
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
-
-#else
+//#else
 __device__ double atomicAdd(double* address, double val)
 {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
@@ -169,7 +168,7 @@ __device__ double atomicAdd(double* address, double val)
   } while (assumed != old);
   return __longlong_as_double(old);
 } 
-#endif
+//#endif
 
  __device__ void addnvv(double* address, double n,G_Vector3 &a,G_Vector3 &b)
 {

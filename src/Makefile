@@ -259,8 +259,8 @@ rods: rods.cpp mdparallel.o md.o $(LIBS)
 	$(rshlib)
 
 eam_cuda.o: 
-#	nvcc  -c -gencode=arch=compute_61,code=sm_61 eam_cuda.cu
-	nvcc  -c -gencode=arch=compute_35,code=sm_35 eam_cuda.cu
+	nvcc  -c -gencode=arch=compute_52,code=sm_52 eam_cuda.cu
+#	nvcc  -c -gencode=arch=compute_35,code=sm_35 eam_cuda.cu
 eamgpu: eam.cpp eam_cuda.o mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS) -lcudart -lstdc++
 	$(rshlib)
@@ -299,8 +299,8 @@ alglue: alglue.cpp aluminum.o mdparallel.o md.o $(LIBS)
 
 
 fem_cuda.o: 
-#	nvcc  -c -gencode=arch=compute_61,code=sm_61 fem_cuda.cu
-	nvcc  -c -gencode=arch=compute_35,code=sm_35 fem_cuda.cu
+	nvcc  -c -gencode=arch=compute_52,code=sm_52 fem_cuda.cu
+#	nvcc  -c -gencode=arch=compute_35,code=sm_35 fem_cuda.cu
 femgpu: fem.cpp fem_cuda.o mdparallel.o md.o $(LIBS)
 	$(link) -D_TEST  $(XLIBS) -lcudart -lstdc++
 	$(rshlib)

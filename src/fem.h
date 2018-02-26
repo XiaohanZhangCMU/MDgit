@@ -13,7 +13,7 @@
 #include <cassert>
 #include "mdparallel.h"
 
-//#define _USECUDA
+#define _USECUDA
 #ifdef _USECUDA
 //#define DEBUG_USECUDA
 #include <cuda_runtime.h>

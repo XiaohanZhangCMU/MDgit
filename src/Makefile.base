@@ -340,8 +340,10 @@ endif
 
 LOPT.sherlock=-L/usr/X11R6/lib -lpthread
 XLIBS.sherlock=-lX11
-TCLLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltcl8.6
-TKLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltk8.6
+#TCLLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltcl8.6
+#TKLIBS.sherlock=-L/home/xzhang11/tcl8/lib -ltk8.6
+TCLLIBS.sherlock=-ltcl8.5
+TKLIBS.sherlock=--ltk8.5
 #PYINCLUDE.sherlock=-I/export/apps/python/2.7.8/include/python2.7/
 #PYLIBS.sherlock=-L/export/apps/python/2.7.8/lib/ -lpython2.7
 F77.sherlock = g77

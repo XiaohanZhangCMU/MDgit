@@ -145,7 +145,7 @@ if { $status == 0 } {
     MD++ cuda_memcpy_all
   } else { 
     setup_window
-    openwindow
+#    openwindow
   }
 
   if { $pbid == 1 } {     	  
@@ -239,6 +239,7 @@ if { $status == 0 } {
     set ic_preparing 0
 
     MD++ incnfile = "NEBinit-1.cn" readcn 
+    MD++ cuda_memcpy_all
     MD++ eval plot sleep 
     # MD++ incnfile = "x-curve.cn" readcn
     # MD++ incnfile = "y-curve-large-152.cn" readcn
@@ -376,8 +377,11 @@ if { $status == 0 } {
     MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
     MD++ incnfile = $initNEBfile readcn setconfig1
     MD++ fixallatoms  constrain_fixedatoms freeallatoms
-    MD++ {  chainlength = 24 allocchain   totalsteps = 5000
-      timestep = 0.00001 printfreq = 10
+    if { $USEGPU == 1 } {
+      MD++ cuda_memcpy_all
+    }
+    MD++ {  chainlength = 24 allocchain   totalsteps = 500000
+      timestep = 0.0001 printfreq = 100
       initRchain
       #incnfile = neb.chain.500 readRchain
       nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
