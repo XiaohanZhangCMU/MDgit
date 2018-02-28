@@ -380,7 +380,7 @@ if { $status == 0 } {
     if { $USEGPU == 1 } {
       MD++ cuda_memcpy_all
     }
-    MD++ {  chainlength = 24 allocchain   totalsteps = 500000
+    MD++ {  chainlength = 24 allocchain   totalsteps = 50000
       timestep = 0.0001 printfreq = 100
       initRchain
       #incnfile = neb.chain.500 readRchain

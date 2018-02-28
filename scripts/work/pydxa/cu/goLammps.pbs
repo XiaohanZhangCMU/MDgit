@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Name of my job
+#PBS -N ppRKF
+
+# Name of my queue
+# Requesting resources from PBS ( 4 node, 8 procs on each)
+#PBS -l nodes=6:ppn=24,walltime=196:00:00
+#PBS -j oe
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+
+# Change to working directory
+cd $PBS_O_WORKDIR
+
+# Start Run 
+
+sleep 1
+
+mpirun -np $ncpu /home/xzhang11/Planet/Codes/lammps-30Jul16/src/lmp_mpi < input.meam
+#mpirun -np $ncpu /home/xzhang11/Planet/Codes/lammps-30Jul16/src/lmp_mpi < input.sw
+
+wait
