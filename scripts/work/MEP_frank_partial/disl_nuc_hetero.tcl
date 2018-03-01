@@ -14,9 +14,7 @@ source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 proc initmd { n } {
 #MD++ setnolog
 MD++ setoverwrite
-#relative to the  directory of lauching 
-#MD++ dirname = runs/w-disl-nuc-hetero-$n
-MD++ dirname = runs/
+MD++ dirname = runs/frankMEP/
 #max number neigbors
 set myname [ MD++_Get "myname" ]
 readmeam-according-to-myname $myname
@@ -616,13 +614,15 @@ if { $surface_reconstruct } {
   MD++ conj_fixbox = 1  relax
   MD++ SHtoR
 
-  MD++ restoreH
+  MD++ eval 
+  set fp [ open "EPOT_2.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
 
+  MD++ restoreH
   MD++ conj_ftol = 1e-4 conj_itmax = 3800 conj_fevalmax = 6000
   MD++ conj_fixbox = 1  relax
 
   MD++ eval 
-  set fp [ open "EPOT_2.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
+  set fp [ open "EPOT_3.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
   MD++ finalcnfile = "0K_${epsilon}_relaxed_${n}.cn" writecn
   MD++ finalcnfile = "0K_${epsilon}_relaxed_${n}.cfg" writeatomeyecfg
   exitmd
@@ -631,22 +631,32 @@ if { $surface_reconstruct } {
 
   initmd $status
   MD++ setnolog
-  MD++ incnfile = "0K_0.0_relaxed_surf${flag}.cn" readcn
+  #MD++ incnfile = "0K_0.0_relaxed_surf${flag}.cn" readcn
+  make_perfect_crystal 12 12 16
+
   MD++ freeallatoms
 
+  set fp [ open "numvoids.txt" ]
+  set file_data [ read $fp ]
+  close $fp
+  set data [ split $file_data "\n" ]
+  set Maxiters [ llength $data ] 
   set voidFrac 0.01
   set sum 0
-  for { set iter 0 } { $iter < 10 } { incr iter 1 } {
+  for { set iter 0 } { $iter < $Maxiters } { incr iter 1 } {
     set voidFrac [expr $voidFrac * 2 ]
     set NP [MD++_Get NP]
-    set N_voids [expr int($NP*$voidFrac/100.0)]
+    #set N_voids [expr int($NP*$voidFrac/100.0)]
+    set N_voids [ lindex $data $iter ]
     puts "N_voids = $N_voids"
 #    setup_window
 #    openwindow
 
     MD++ eval
-    set epot0  [ MD++_Get EPOT ]
-    set fp [ open "VOIDS_EPOT_$iter.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
+    set epot0 [ MD++_Get EPOT ]
+    set fp [ open "VOIDS_EPOT_$iter.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; 
+    close $fp
+
     for { set x 0 } { $x < $N_voids } { incr x 1 } {
       set NP [MD++_Get NP]
       set n [myRand 0 $NP]
@@ -654,17 +664,22 @@ if { $surface_reconstruct } {
       MD++ removefixedatoms
     }
 
+    MD++ freeallatoms
     MD++ eval
     set epot1 [ MD++_Get EPOT ]
-    set fp [ open "VOIDS_EPOT_$iter.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
-    set fp [ open "VOIDS_EPOT_$iter.dat" a+ ]; puts $fp "${N_voids}"; close $fp
-    
-    MD++ freeallatoms
+    relax_fixbox
+    MD++ eval
+    set epot2 [ MD++_Get EPOT ]
+
     set tmp [ expr ($epot1-$epot0)/$N_voids ]
     set sum [ expr $sum + ($epot1-$epot0)/$N_voids ]
     puts "energy difference / # of voids = $tmp"
-    }
-  set sum [ expr $sum/10 ]
+
+    set fp [ open "VOIDS_EPOT.dat" a+ ]; 
+    puts $fp "${N_voids} $epot0 $epot1 $epot2 $sum"
+    close $fp
+  }
+  set sum [ expr $sum/$Maxiters ]
   puts "energy of a void is $sum"
 
 } elseif { $status == 100 } {

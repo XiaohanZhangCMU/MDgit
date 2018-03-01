@@ -1,8 +1,11 @@
 import os, sys
 import numpy as np
 import random
+import pickle
 from subprocess import call
 from numpy import linalg as LA
+
+from bitarray import bitarray
 
 # exec(open("./global_search.py").read())
 
@@ -26,12 +29,14 @@ from numpy import linalg as LA
 
 # icd: initial cluster dimension
 # make Nmax tries
-global dirname, icdx, icdy, icdz, Nmax
-dirname = 'runs/'
+# dataset: a dictionary { bits : potential energy }
+global dirname, icdx, icdy, icdz, Nmax, dataset
+dirname = 'runs/frankMEP/'
 icdx = 0.42 #0.32
 icdy = 0.42 #0.32
 icdz = 0.42 #0.32
 Nmax = 100
+dataset = { }
 
 # Return atom Id within an ecllipse given _SR
 # pt1: center coordinate in _SR coordinate
@@ -119,7 +124,7 @@ def writecfg_fromdata(data, H, finalcnfile):
       the_file.write('\n') 
     the_file.write('1 Mo\n')
     the_file.write(' 0 0')
-  call([ "sw_mc2_mpich",  "disl_nuc_hetero.tcl", "100", finalcnfile ])
+  call([ "sw_mc2_mpich",  "scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl", "100", finalcnfile ])
   
 def removeNucleusAtoms(cfg, nucleus, atomIdx):
   idx = np.setdiff1d(atomIdx, nucleus)
@@ -159,13 +164,26 @@ def build_nbrlist(totIdx, cfg, maxnbrs, cutoff, opt):
     np.save(dirname+"nbrlist.npy", nbrlist)
   return nbrlist
 
+def save_obj(obj, name ):
+  with open(dirname + name + '.pkl', 'wb') as f:
+    pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+			
+def load_obj(name ):
+  with open(dirname + name + '.pkl', 'rb') as f:
+    return pickle.load(f) 
+
+def set_bits_for_nucleus(nucleus, totIdx):
+  bits = np.in1d(totIdx, nucleus)
+  bits = bits.astype(int)
+  return bits
+  
 '''                        
    Main Program Starts Here
 
 '''                       
 status = 1
 if status == 0: 
-  call([ "sw_mc2_mpich",  "disl_nuc_hetero.tcl", "0", "n", "001", "1" ])
+  call([ "sw_mc2_mpich",  "scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl", "0", "n", "001", "1" ])
   exit(0)
  
 elif status == 1:
@@ -222,13 +240,21 @@ elif status == 1:
 
     # Read trench_$step.cn then relax the state with help of applied strain
     # Calculate potential energy of the final state write to file "trench_energy.dat" on line step
-    # print("sw_mc2_mpich"+"disl_nuc_hetero.tcl"+"1"+str(step)+str(normal[0])+str(normal[1])+str(normal[2])+str(D)+str(pt1[0])+str(pt1[1])+str(pt1[2])+str(icdx) +str(icdy) +str(icdz) )
-    call([ "sw_mc2_mpich","disl_nuc_hetero.tcl","1",str(step),str(normal[0]), str(normal[1]), str(normal[2]), str(D), str(pt1[0]), str(pt1[1]), str(pt1[2]), str(icdx), str(icdy), str(icdz) ]);
+    call([ "sw_mc2_mpich","scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl","1",str(step),str(normal[0]), str(normal[1]), str(normal[2]), str(D), str(pt1[0]), str(pt1[1]), str(pt1[2]), str(icdx), str(icdy), str(icdz) ]);
+
+    bits = set_bits_for_nucleus(nucleus, totIdx)
+    data = np.loadtxt(dirname+'EPOT_2.dat')
+    mybits=""
+    for k in bits:
+      mybits+=str(k)
+    dataset[mybits] = data[step]
+    print("----------------------------------------------------------size of dataset is {0}".format( len(dataset)) )
 
     a0 += (icdy-a0)/Nmax; b0 = a0;
     print('a0 = {0}, b0 = {1}'.format(a0,b0));
     nucleus = select_atoms_within_ecllipse(pt1, a0, b0, normal, cfg, atomIdx, totIdx)   
 
+  save_obj(dataset, 'dataset')
 #    # Find an atom i randomly in current nucleus
 #    bdy_list = find_bdy_atoms(nbrlist,nucleus,cfg)
 #    atom_i = random.sample(set(bdy_list),1)
@@ -248,6 +274,8 @@ elif status == 1:
  
   
   # end of for step in range(Nmax)
+
+
 
 elif status == 2:
   # Read all energy states and connectivities and form graph
