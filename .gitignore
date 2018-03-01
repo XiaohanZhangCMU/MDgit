@@ -11,4 +11,5 @@ tests
 runs
 fem_modload.sh
 *.dat
-.svn
+*.svn
+*.pbs

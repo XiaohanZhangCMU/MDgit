@@ -20,16 +20,16 @@ class MD(data.Dataset):
             target and transforms it.
     """
     train_list = {}
-    train_list['cu']=['cu_0.npy']
-    train_list['ni']=['ni_0.npy']
-    train_list['si']=['si_0.npy']
-    train_list['ge']=['ge_0.npy']
+    train_list['cu']=['data.npy']
+    train_list['ni']=['data.npy']
+    train_list['si']=['data.npy']
+    train_list['ge']=['data.npy']
 
     test_list = {}
-    test_list['cu']=['cu_0.npy']
-    test_list['ni']=['ni_0.npy']
-    test_list['si']=['si_0.npy']
-    test_list['ge']=['ge_0.npy']
+    test_list['cu']=['data.npy']
+    test_list['ni']=['data.npy']
+    test_list['si']=['data.npy']
+    test_list['ge']=['data.npy']
 
     labels = {}
     labels['cu']=1
@@ -45,55 +45,79 @@ class MD(data.Dataset):
         # Let`s assume every data point has the same number of features, 3*base_features*base_features
         # If a data point has more than that, we throw an error
         # If a data point has less than that, we padd with zeros
-        self.n_base_width = 120;
-        self.n_base_height = 120;
+        self.n_base_width = 124;
+        self.n_base_height = 124;
         self.n_base_features = self.n_base_width*self.n_base_height*3
+
+        train_start = 0
+        train_end = 0.3
+
+        test_start = 0.4
+        test_end = 0.9
+
         # now load the picked numpy arrays
         if self.train:
             self.train_data = []
             self.train_labels = []
-            for fentry in self.train_list:
-                for file in fentry:
-                    fo = open(os.path.join(root, file, 'rb')
-                    entry = np.load(fo)
-                    n_features = entry[2]
-                    n_data_points = entry.size/(n_features+4) 
+            for key, files in self.train_list.items():
+                print(key)
+                for npyfile in files:
+                    print(npyfile)
+                    fo = os.path.join(root, key, npyfile)
+                    dps = np.load(fo)
+                    n_features = int(dps[3])
+                    print(n_features)
+                    n_dps = dps.size/(n_features+4)
+                    assert(len(dps.shape) == 1), "Shape of npydata has to be (N,)"
+                    assert(n_features <= self.n_base_features), "Your data point {0} is too big! Truncate it!".format(n_features)
+                    assert(n_dps-int(n_dps)==0), "Invalid npy file {0}".format(fo)
+                    n_data_points = int(n_dps*(train_end-train_start))
+                    print(n_data_points)
+        
                     self.total_train_data_points += n_data_points
-                    for i in range(n_data_points):
-                        assert(n_features <= n_base_features), "Your data point {0} is too big! Truncate it!".format(i)
-                        if (n_features < n_base_features):
-                            zeros = [0]*(n_base_features-n_features)
-                            self.train_data.append(list(entry[i*(n_features+4):(i+1)*(n_features+4)], zeros))
-                        else:
-                            self.train_data.append(entry[i*(n_features+4):(i+1)*(n_features+4)])
-                        self.train_labels += self.labels[fentry.key]
-                    fo.close()
-
+                    dps_validation = 0
+                    for i in range(int(train_start*n_dps), int(train_end*n_dps)):
+                        self.train_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
+                        self.train_labels.append(self.labels[key])
+                        dps_validation += dps[i*(n_features+4)+3]
+                    assert(dps_validation == n_data_points * n_features), "Number of features do not add up!"
             self.train_data = np.concatenate(self.train_data)
-            self.train_data = self.train_data.reshape((self.total_data_points, 3, self.n_base_width, self.n_base_height))
+            self.train_data = self.train_data.reshape((self.total_train_data_points, 3, self.n_base_width, self.n_base_height))
+            self.train_data = self.train_data.astype('float32')
+#            self.train_data[:,:,:,:] = self.train_data
+            print(self.train_data.shape)
+            print(self.train_data.dtype)
         else:
             self.test_data = []
             self.test_labels = []
-            for fentry in self.test_list:
-                for file in fentry:
-                    fo = open(os.path.join(root, file, 'rb')
-                    entry = np.load(fo)
-                    n_features = entry[2]
-                    n_data_points = entry.size/(n_features+4) 
+            for key, files in self.test_list.items():
+                print(key)
+                for npyfile in files:
+                    print(npyfile)
+                    fo = os.path.join(root, key, npyfile)
+                    dps = np.load(fo)
+                    n_features = int(dps[3])
+                    print(n_features)
+                    n_dps = dps.size/(n_features+4)
+                    assert(len(dps.shape) == 1), "Shape of npydata has to be (N,)"
+                    assert(n_features <= self.n_base_features), "Your data point {0} is too big! Truncate it!".format(n_features)
+                    assert(n_dps-int(n_dps)==0), "Invalid npy file {0}".format(fo)
+                    n_data_points = int(n_dps*(test_end-test_start))
+                    print(n_data_points)
+        
                     self.total_test_data_points += n_data_points
-                    assert(n_features <= n_base_features), "One of your data point is too big! Truncate it!"
-                    for i in range(n_data_points):
-                        assert(n_features <= n_base_features), "Your data point {0} is too big! Truncate it!".format(i)
-                        if (n_features < n_base_features):
-                            zeros = [0]*(n_base_features-n_features)
-                            self.test_data.append(list(entry[i*(n_features+4):(i+1)*(n_features+4)], zeros))
-                        else:
-                            self.test_data.append(entry[i*(n_features+4):(i+1)*(n_features+4)])
-                        self.test_labels += self.labels[fentry.key]
-                    fo.close()
-
+                    dps_validation = 0
+                    for i in range(int(test_start*n_dps), int(test_end*n_dps)):
+                        self.test_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
+                        self.test_labels.append(self.labels[key])
+                        dps_validation += dps[i*(n_features+4)+3]
+                    assert(dps_validation == n_data_points * n_features), "Number of features do not add up! {0} vs {1}".format(dps_validation, n_data_points * n_features)
             self.test_data = np.concatenate(self.test_data)
-            self.test_data = self.test_data.reshape((self.total_test_data_points, 3, self.n_base_width, self.n_base_height))
+            self.test_data = self.test_data.reshape((self.total_test_data_points, 3,self.n_base_width, self.n_base_height))
+            self.test_data = self.test_data.astype('float32')
+            print(self.test_data.shape)
+            print(self.test_data.dtype)
+#            self.test_data[:,:,:,:] = self.test_data
 
     def __getitem__(self, index):
         """

@@ -1,7 +1,7 @@
 '''
 Factors that affect test accuracy:
 1) Number of conv layer in each module.
-2) Data augumentation. Implemented in cifar10.
+2) Data augumentation. NOT implemented in MD yet.
 3) Adaptive learning rate. 
 4) Batch_size. 
 5) Weigth_decay of SGD. 
@@ -12,9 +12,8 @@ Factors that affect test accuracy:
 10) Adam vs SGD. 
 
 To do: 
-    write a dataloader for arbitrary data
     use cnn for dislocation detection problem
-    problem w. utils.progressbar when submit jobs
+    padding with zeros do not make physical sense very much
 '''
 
 import sys
@@ -26,18 +25,17 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import cnn_models
-import cifar10
+import md
 #from utils import progress_bar
 
 
 N_EPOCH = 300
-BATCH_SIZE = 128 #150
-LR = 0.1 #Initial learning rate
-DOWNLOAD_MNIST = False
-DOWNLOAD_CIFAR10 = False
+BATCH_SIZE = 256 #150
+LR = 1 #Initial learning rate
 nnfile = 'cnn.pkl' 
 nnparamfile = 'cnn.pkl.params'
 use_cuda = torch.cuda.is_available()
+print("use_cuda = {}".format(use_cuda))
 def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparamfile):
     loss_function = nn.CrossEntropyLoss()
     log_train = open('Log_Train_'+str(LR) +'_'+ str(BATCH_SIZE)+'.txt','a')
@@ -90,13 +88,18 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
             inputs, targets = Variable(inputs, volatile=True), Variable(targets)
             outputs = net(inputs)
             loss = loss_function(outputs, targets)
+#            print("loss = {}".format(loss.data[0]))
             test_loss += loss.data[0]
             _, predicted = torch.max(outputs.data, 1)
+#            print("outputs = {}".format(outputs.data))
+#            print("predicted = {}".format(predicted))
+#            print("targets = {}".format(targets))
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
             
         buff = 'epoch =' + str(epoch)+ ': test accuracy: ' + str(100.*correct/total)+'\n'
         print(buff)
+        print("correct = {0}, total = {1}".format(correct, total))
        
         net.train() # switch net to 'train' mode
         epoch_id += 1
@@ -108,42 +111,23 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
     log_valid.close()
     return net
 
-# train to recognize MNIST data
-def main_1(argv):
-    train_data = torchvision.datasets.MNIST(
-        root = '../mnist',
-        train = True,
-        transform = torchvision.transforms.ToTensor(),
-        download=DOWNLOAD_MNIST
-    )
-    train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size=BATCH_SIZE,
-                                   shuffle = True, num_workers = 2)
-    test_data = torchvision.datasets.MNIST(root='../mnist/', train=False)
-    validation_x = Variable(torch.unsqueeze(test_data.test_data, dim=1),volatile=True).type(torch.FloatTensor)[:2000]/255.
-    validation_y = test_data.test_labels[:2000]
-
-    net = cnn_models.CNN( )
-    net = train_and_save( net, train_loader, validation_x, validation_y, LR, N_EPOCH, nnfile, nnparamfile)
-
 # train to reconginize CIFAR10 data
-def main(argv):
-    train_data = cifar10.CIFAR10(
-        root = '../cifar10',
-        train = True,
-        download=DOWNLOAD_CIFAR10
-    )
-    train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size=BATCH_SIZE,
-                                               shuffle = True, num_workers = 2)
-    test_data = cifar10.CIFAR10(root='../cifar10/', train=False, download=False)
-    test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = 100, shuffle=True, num_workers=2) 
+#def main(argv):
+train_data = md.MD(root = '../../../../runs/pydxa/', train = True)
+train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size=BATCH_SIZE,
+                                           shuffle = True, num_workers = 2)
+test_data = md.MD(root='../../../../runs/pydxa/', train=False)
+test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = BATCH_SIZE, 
+                                          shuffle=True, num_workers=2) 
 
-    net = cnn_models.CNN( )
-    if use_cuda:
-        net.cuda()
-        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count())) 
-        torch.backends.cudnn.enabled=True
-        
-    net = train_and_save( net, train_loader, test_loader, LR, N_EPOCH, nnfile, nnparamfile)
+net = cnn_models.CNN( )
+#net.double()
+if use_cuda:
+    net.cuda()
+    net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count())) 
+    torch.backends.cudnn.enabled=True
+    
+net = train_and_save( net, train_loader, test_loader, LR, N_EPOCH, nnfile, nnparamfile)
 
-if __name__ == "__main__":
-    main(sys.argv[1:])
+#if __name__ == "__main__":
+#    main(sys.argv[1:])
