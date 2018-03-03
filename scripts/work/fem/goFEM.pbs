@@ -1,30 +1,16 @@
 #!/bin/bash
-#PBS -N fem
-#PBS -j oe
-#PBS -l nodes=1:ppn=24,walltime=120:00:00
-#PBS -V
+#SBATCH --job-name=w_disl
+#format could be dd-hh:mm:ss, hh:mm:ss, mm:ss, or mm
+#SBATCH --time=7-0:0:0
+#SBATCH --qos=long
+#SBATCH --nodes=1
+#SBATCH --mem=20000
+#SBATCH -p mc --gres gpu:1
+#SBATCH --mail-type=END,FAIL 
+#SBATCH --mail-user=xzhang11@stanford.edu
 
-### ---------------------------------------
-### BEGINNING OF EXECUTION
-### ---------------------------------------
+module load cuda/7.0
 
-echo The master node of this job is `hostname`
-echo The working directory is `echo $PBS_O_WORKDIR`
-echo This job runs on the following nodes:
-echo `cat $PBS_NODEFILE`
-
-ncpu=`cat $PBS_NODEFILE | wc -w`
-echo "Number of processors = $ncpu "
-### end of information preamble
-
-cd $PBS_O_WORKDIR
-
-echo $PWD
-
-sleep 1
-#mpirun -np $ncpu bin/fem_mc2_mpich scripts/x-test-fem/x-test-neb/neb-test.tcl 5 4 7 > log.$PBS_JOBID
-#mpirun -np $ncpu bin/fem_mc2_mpich scripts/x-test-fem/x-test-neb/neb-test.tcl 5 5 10 > log.$PBS_JOBID
-bin/fem_mc2_mpich scripts/x-test-fem/x-test-neb/neb-test.tcl 1 10 15 > log.$PBS_JOBID
+sleep 1 
+bin1/femgpu_sherlock scripts/work/fem/neb-test.tcl 1 3 3 2
 wait
-#wipe $PBS_NODEFILE
-
