@@ -29,14 +29,14 @@ import md
 #from utils import progress_bar
 
 
-N_EPOCH = 300
-BATCH_SIZE = 256 #150
-LR = 1 #Initial learning rate
+N_EPOCH = 100
+BATCH_SIZE = 64 #150
+LR = 0.1 #Initial learning rate
 nnfile = 'cnn.pkl' 
 nnparamfile = 'cnn.pkl.params'
 use_cuda = torch.cuda.is_available()
 print("use_cuda = {}".format(use_cuda))
-def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparamfile):
+def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparamfile, opt):
     loss_function = nn.CrossEntropyLoss()
     log_train = open('Log_Train_'+str(LR) +'_'+ str(BATCH_SIZE)+'.txt','a')
     log_valid = open('Log_Valid_'+str(LR) +'_'+ str(BATCH_SIZE)+'.txt','a')
@@ -54,8 +54,8 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
             lr = 0.0028
 
         # train the current epoch
-        # optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-        optimizer = torch.optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+        #optimizer = torch.optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
         for batch_idx, (x,y) in enumerate(train_loader):
             if (use_cuda): 
                 x, y = x.cuda(), y.cuda()
@@ -77,31 +77,31 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
         print(buff) 
 
         # test the current epoch
-        net.eval() # switch net to 'test' mode
-        test_loss = 0
-        correct = 0
-        total = 0
-        loss_function = nn.CrossEntropyLoss()
-        for batch_idx, (inputs, targets) in enumerate(test_loader):
-            if use_cuda:
-                inputs, targets = inputs.cuda(), targets.cuda()
-            inputs, targets = Variable(inputs, volatile=True), Variable(targets)
-            outputs = net(inputs)
-            loss = loss_function(outputs, targets)
-#            print("loss = {}".format(loss.data[0]))
-            test_loss += loss.data[0]
-            _, predicted = torch.max(outputs.data, 1)
-#            print("outputs = {}".format(outputs.data))
-#            print("predicted = {}".format(predicted))
-#            print("targets = {}".format(targets))
-            total += targets.size(0)
-            correct += predicted.eq(targets.data).cpu().sum()
-            
-        buff = 'epoch =' + str(epoch)+ ': test accuracy: ' + str(100.*correct/total)+'\n'
-        print(buff)
-        print("correct = {0}, total = {1}".format(correct, total))
-       
-        net.train() # switch net to 'train' mode
+        if opt == 1:
+            net.eval() # switch net to 'test' mode
+            test_loss = 0
+            correct = 0
+            total = 0
+            loss_function = nn.CrossEntropyLoss()
+            for batch_idx, (inputs, targets) in enumerate(test_loader):
+                if use_cuda:
+                    inputs, targets = inputs.cuda(), targets.cuda()
+                inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+                outputs = net(inputs)
+                loss = loss_function(outputs, targets)
+#                print("loss = {}".format(loss.data[0]))
+                test_loss += loss.data[0]
+                _, predicted = torch.max(outputs.data, 1)
+#                print("outputs = {}".format(outputs.data))
+#                print("predicted = {}".format(predicted))
+#                print("targets = {}".format(targets))
+                total += targets.size(0)
+                correct += predicted.eq(targets.data).cpu().sum()
+            buff = 'epoch =' + str(epoch)+ ': test accuracy: ' + str(100.*correct/total)+'\n'
+            print(buff)
+            print("correct = {0}, total = {1}".format(correct, total))
+            net.train() # switch net to 'train' mode
+
         epoch_id += 1
 
 #   end of training
@@ -116,18 +116,18 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
 train_data = md.MD(root = '../../../../runs/pydxa/', train = True)
 train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size=BATCH_SIZE,
                                            shuffle = True, num_workers = 2)
-test_data = md.MD(root='../../../../runs/pydxa/', train=False)
-test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = BATCH_SIZE, 
-                                          shuffle=True, num_workers=2) 
+#test_data = md.MD(root='../../../../runs/pydxa/', train=False)
+#test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = BATCH_SIZE, 
+#                                          shuffle=True, num_workers=2) 
+test_loader = 0
 
 net = cnn_models.CNN( )
-#net.double()
 if use_cuda:
     net.cuda()
     net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count())) 
     torch.backends.cudnn.enabled=True
     
-net = train_and_save( net, train_loader, test_loader, LR, N_EPOCH, nnfile, nnparamfile)
+net = train_and_save( net, train_loader, test_loader, LR, N_EPOCH, nnfile, nnparamfile, opt=0)
 
 #if __name__ == "__main__":
 #    main(sys.argv[1:])

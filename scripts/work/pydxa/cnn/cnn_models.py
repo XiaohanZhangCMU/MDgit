@@ -16,35 +16,49 @@ class CNN(nn.Module):
             ),
             nn.BatchNorm2d(124),        
             nn.ReLU(),
-#            nn.Conv2d(124,124,3,1,1),
-#            nn.BatchNorm2d(124),        
-#            nn.ReLU(),
+            nn.Conv2d(124,124,3,1,1),
+            nn.BatchNorm2d(124),        
+            nn.ReLU(),
             nn.Conv2d(124,124,3,1,1),
             nn.Dropout2d(p=0.1),
             nn.BatchNorm2d(124),        
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),                
         )
-#        self.module_2 = nn.Sequential(
-#                        nn.Conv2d(124, 248, 3, 1, 1),
-#                        nn.BatchNorm2d(248),
-#                        nn.ReLU(),
-#                        nn.Conv2d(248,248, 3, 1, 1),
-#                        nn.BatchNorm2d(248),
-#                        nn.ReLU(),
-#                        nn.Conv2d(248, 248, 3, 1, 1),
-#                        nn.Dropout2d(p=0.1),
-#                        nn.BatchNorm2d(248),
-#                        nn.ReLU(),
-#                        nn.MaxPool2d(2),
-#                        )     
+        self.module_2 = nn.Sequential(
+                        nn.Conv2d(124, 248, 3, 1, 1),
+                        nn.BatchNorm2d(248),
+                        nn.ReLU(),
+                        nn.Conv2d(248,248, 3, 1, 1),
+                        nn.BatchNorm2d(248),
+                        nn.ReLU(),
+                        nn.Conv2d(248, 248, 3, 1, 1),
+                        nn.Dropout2d(p=0.1),
+                        nn.BatchNorm2d(248),
+                        nn.ReLU(),
+                        nn.MaxPool2d(2),
+                        )     
 
+        self.module_3 = nn.Sequential(
+            nn.Conv2d(248, 496, 3, 1, 1),
+            nn.BatchNorm2d(496),        
+            nn.ReLU(),
+            nn.Conv2d(496, 496, 3, 1, 1),
+            nn.BatchNorm2d(496),        
+            nn.ReLU(),
+            nn.Conv2d(496, 496, 3, 1, 1),
+            nn.Dropout2d(p = 0.1),
+            nn.BatchNorm2d(496),        
+            nn.ReLU(),
+            nn.MaxPool2d(2),                                
+        )
 
-        self.out = nn.Linear(124, 2)
+        self.out = nn.Linear(496, 2)
 
     def forward(self, x):
         x = self.module_1(x)
-#        x = self.module_2(x)
+        x = self.module_2(x)
+        x = self.module_3(x)
 
         x = x.view(x.size(0), x.size(1), -1)
         x = x.mean(2)

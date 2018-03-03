@@ -5,7 +5,7 @@ from torch.autograd import Variable
 import sys
 from utils import progress_bar
 import torch
-import cifar10
+import md
 
 use_cuda = torch.cuda.is_available()
 
@@ -21,12 +21,14 @@ def main1(sys):
     print(test_y[:10].numpy(),'real number') 
     
 def main(sys):
-    phototags = {'plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'}
-    test_data = cifar10.CIFAR10(root='../../cifar10/', train=False, download=False)
-    test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = 100, shuffle=True, num_workers=2) 
+    tags = {'diamond', 'fcc'}
+    tags = {'no_disl', 'disl'}
+    test_data = md.MD(root='../../../../runs/pydxa/', train=False)
+    test_loader = torch.utils.data.DataLoader(dataset = test_data, batch_size = 10, 
+                                          shuffle=True, num_workers=2) 
 
 #    net = torch.load('cnn.pkl.0.0028.128') 
-    net = torch.load('cnn.pkl.0.1.128')
+    net = torch.load('cnn.pkl.0.1.64')
     net.eval()
     test_loss = 0
     correct = 0

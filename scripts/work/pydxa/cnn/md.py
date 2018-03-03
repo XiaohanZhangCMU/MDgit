@@ -31,11 +31,11 @@ class MD(data.Dataset):
     test_list['si']=['data.npy']
     test_list['ge']=['data.npy']
 
-    labels = {}
-    labels['cu']=1
-    labels['ni']=1
-    labels['si']=0
-    labels['ge']=0
+    labels_1 = {}
+    labels_1['cu']=1
+    labels_1['ni']=1
+    labels_1['si']=0
+    labels_1['ge']=0
 
     def __init__(self, root, train=True):
         self.root = os.path.expanduser(root)
@@ -52,8 +52,9 @@ class MD(data.Dataset):
         train_start = 0
         train_end = 0.3
 
-        test_start = 0.4
+        test_start = 0.3
         test_end = 0.9
+        tol = 1e-3; #zero tolerance for dislocation length
 
         # now load the picked numpy arrays
         if self.train:
@@ -78,7 +79,11 @@ class MD(data.Dataset):
                     dps_validation = 0
                     for i in range(int(train_start*n_dps), int(train_end*n_dps)):
                         self.train_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
-                        self.train_labels.append(self.labels[key])
+#                        self.train_labels.append(self.labels_1[key])
+                        labels_2 = 0
+                        if np.abs(dps[i*(n_features+4)+2])>tol:
+                            labels_2 = 1
+                        self.train_labels.append(labels_2)
                         dps_validation += dps[i*(n_features+4)+3]
                     assert(dps_validation == n_data_points * n_features), "Number of features do not add up!"
             self.train_data = np.concatenate(self.train_data)
@@ -109,7 +114,11 @@ class MD(data.Dataset):
                     dps_validation = 0
                     for i in range(int(test_start*n_dps), int(test_end*n_dps)):
                         self.test_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
-                        self.test_labels.append(self.labels[key])
+#                        self.test_labels.append(self.labels_1[key])
+                        labels_2 = 0
+                        if np.abs(dps[i*(n_features+4)+2])>tol:
+                            labels_2 = 1
+                        self.test_labels.append(labels_2)
                         dps_validation += dps[i*(n_features+4)+3]
                     assert(dps_validation == n_data_points * n_features), "Number of features do not add up! {0} vs {1}".format(dps_validation, n_data_points * n_features)
             self.test_data = np.concatenate(self.test_data)

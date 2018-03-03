@@ -13,3 +13,7 @@ fem_modload.sh
 *.dat
 *.svn
 *.pbs
+*.out
+*.txt
+cnn.pkl.*
+__pycache__
