@@ -206,6 +206,7 @@ elif status == 1:
   D = normal[0] * x0 + normal[1] * y0 + normal[2] * z0;
   totIdx = select_totalatoms_on_slice(eps, pt1, cfg, normal, D, atomIdx)
   writecfg_fromdata(cfg[totIdx,:], H, "slice")
+  write_SR(cfg[totIdx,:], "slice")
 
   # Choose initial nucleus at the top free surface along x=0  
   # The safer way is to pick atom (x,z) from X-window

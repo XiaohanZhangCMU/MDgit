@@ -627,6 +627,137 @@ if { $surface_reconstruct } {
   MD++ finalcnfile = "0K_${epsilon}_relaxed_${n}.cfg" writeatomeyecfg
   exitmd
 
+} elseif { $status == 10 } { 
+  MD++ setnolog
+  initmd $status
+  set sliceid 1
+
+  set A $flag
+  set B $opt1
+  set C $opt2
+  set D $opt3
+
+  set x0 $opt4
+  set y0 $opt5
+  set z0 $opt6
+
+  set icdx $opt7
+  set icdy $opt8
+  set icdz $opt9
+    
+  MD++ incnfile = "trench_tot.cn" readcn
+  MD++ finalcnfile = "trench_tot.cfg" writeatomeyecfg
+  MD++ eval
+  set fp [ open "EPOT_1.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
+
+  #openwindow
+  
+  set strain_data_file "strain_surf_001.dat"
+  set stress_data_file "stress_surf_001.dat"
+
+
+  set fp [ open "slice.dat" r ]
+  set tol [expr 0.05]
+
+  set file_data [ read $fp ]
+  close $fp
+  set data [split $file_data "\n"];
+
+  set NP [ MD++_Get NP ] 
+  set Nnuc [ llength $data ]
+  set Nnuc [ expr $Nnuc -1 ]
+  puts "Nnuc = $Nnuc"
+  #puts "data = $data"
+
+  for { set i 0 } { $i < $NP } { incr i 1 } {    
+    set xi [ MD++_Get SR([expr 3*$i])   ]
+    set yi [ MD++_Get SR([expr 3*$i+1]) ]
+    set zi [ MD++_Get SR([expr 3*$i+2]) ]
+    if { [expr abs($xi-$x0)] < $icdx && [expr abs($yi-$y0)] < $icdy && [expr abs($zi-$z0)] < $icdz } { 
+      set count [expr 0 ]
+      foreach line $data {
+	  if { $count < $Nnuc } { 
+            set linedata [ split $line " " ]
+	    lassign $linedata x y z
+#	    puts "n = $n, x = $x, y = $y, z = $z, count = $count"
+            set dx [ expr $xi - $x ]
+            set dy [ expr $yi - $y ]
+            set dz [ expr $zi - $z ]
+            if { [expr abs($dx) ] < $tol && [expr abs($dz) ] < $tol && [expr abs($dz)]<$tol } {
+               set tmp [expr $A * $xi + $B * $yi + $C * $zi + $D ]
+               if { $tmp >0 } {
+                 MD++ input = \[ 1 $i \] fixatoms_by_ID
+               }
+            }
+	  }
+	  set count [expr $count +1]
+      }  
+    }
+  }
+  MD++ input = 1 setfixedatomsgroup freeallatoms
+
+  for { set i 0 } { $i < $NP } { incr i 1 } {    
+    set xi [ MD++_Get SR([expr 3*$i])   ]
+    set yi [ MD++_Get SR([expr 3*$i+1]) ]
+    set zi [ MD++_Get SR([expr 3*$i+2]) ]
+    if { [expr abs($xi-$x0)] < $icdx && [expr abs($yi-$y0)] < $icdy && [expr abs($zi-$z0)] < $icdz } { 
+      set count [expr 0 ]
+      foreach line $data {
+	  if { $count < $Nnuc } { 
+            set linedata [ split $line " " ]
+	    lassign $linedata x y z
+#	    puts "n = $n, x = $x, y = $y, z = $z, count = $count"
+            set dx [ expr $xi - $x ]
+            set dy [ expr $yi - $y ]
+            set dz [ expr $zi - $z ]
+            if { [expr abs($dx) ] < $tol && [expr abs($dz) ] < $tol && [expr abs($dz)]<$tol } {
+               set tmp [expr $A * $xi + $B * $yi + $C * $zi + $D ]
+               if { $tmp < 0 } {
+                 MD++ input = \[ 1 $i \] fixatoms_by_ID
+               }
+            }
+	  }
+	  set count [expr $count +1]
+      }  
+    }
+  }
+
+  MD++ input = 2 setfixedatomsgroup freeallatoms
+  
+  set mag  1
+  set magx [ expr $A*$mag ]
+  set magy [ expr $B*$mag ]
+  set magz [ expr $C*$mag ]
+  MD++ input = \[ 1 -$magx -$magy -$magz 1 \] movegroup
+  MD++ input = \[ 1  $magx  $magy  $magz 2 \] movegroup
+
+  #MD++ plot 
+
+  set H11_0 [ MD++_Get H_11 ] ; set H22_0 [ MD++_Get H_22 ] ; set H33_0 [ MD++_Get H_33 ]
+
+  MD++ saveH
+  set epsilon -0.05
+
+  MD++ input = \[ 1 1 $epsilon \] changeH_keepS
+  MD++ conj_ftol = 1e-4 conj_itmax = 3800 conj_fevalmax = 6000
+  MD++ conj_fixbox = 1  relax
+  MD++ SHtoR
+
+  MD++ eval 
+  set fp [ open "EPOT_2.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
+
+  MD++ restoreH
+  MD++ conj_ftol = 1e-4 conj_itmax = 3800 conj_fevalmax = 6000
+  MD++ conj_fixbox = 1  relax
+
+  MD++ eval 
+  set fp [ open "EPOT_3.dat" a+ ]; puts $fp [ MD++_Get EPOT ]; close $fp
+  MD++ finalcnfile = "0K_${epsilon}_relaxed_${n}.cn" writecn
+  MD++ finalcnfile = "0K_${epsilon}_relaxed_${n}.cfg" writeatomeyecfg
+  exitmd
+
+
+
 } elseif { $status == 2 } { 
 
   initmd $status

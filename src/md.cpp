@@ -7264,7 +7264,7 @@ void MDFrame::calChainForce(int n, int relax_surround, double *Ec)
         call_potential();
         Ec[j]=_EPOT;
  
-	INFO_Printf("j = %d, Ec[%d] = %g, s = %g, \n", j, j, Ec[j], s);
+	//INFO_Printf("j = %d, Ec[%d] = %g, s = %g, \n", j, j, Ec[j], s);
         /* Put atomic forces to _Fc array */
         for(i=0;i<n;i++)
         {

@@ -8,7 +8,7 @@ source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 # Definition of procedures
 #*******************************************
 proc initmd { status pbid meshid eqnType } {
-  MD++ setnolog
+#  MD++ setnolog
   MD++ setoverwrite
   if { $status==19 || $status==20 || $status==21 || $status==22 || $status==23 || $status==24 } {
     MD++ dirname = runs/fem/fem-view-$status-$pbid-$meshid-$eqnType
@@ -234,21 +234,17 @@ if { $status == 0 } {
     set PI 3.1415926
     set perturb 2
     set NP [ MD++_Get "NP" ] 
-    set x_curve  1
-    set y_curve  0
+    set x_curve  0
+    set y_curve  1
     set ic_preparing 0
 
-    MD++ incnfile = "NEBinit-0.cn" readcn 
-    MD++ eval plot sleep 
-    # MD++ incnfile = "x-curve.cn" readcn
-    # MD++ incnfile = "y-curve-large-152.cn" readcn
-    # MD++ incnfile = "xonlycurve.cn" readcn
-
-    #x=0.7 y=1.0  --> x curve 
-    #x=1.0 y=1.46 --> y curve
-    
-    MD++ x_eigen_strain = 0.73
-    MD++ y_eigen_strain = 1.20
+    if { $x_curve == 1 } { 
+      MD++ x_eigen_strain = 0.73
+      MD++ y_eigen_strain = 1.29
+    } else {
+      MD++ x_eigen_strain = 0.83
+      MD++ y_eigen_strain = 1.29
+    }
     # they are scaled coordinates
     MD++ x_eigen_zbound_min = -10
     MD++ x_eigen_zbound_max =  0
@@ -260,30 +256,40 @@ if { $status == 0 } {
       MD++  conj_ftol = 1e-2 conj_itmax = 260 conj_fevalmax = 330000
       MD++ conj_fixbox = 1 relax
       if { $x_curve == 1 } { 
-         MD++ finalcnfile = "y-curve-1.cn" writecn
-      } elseif { $y_curve == 1 } { 
          MD++ finalcnfile = "x-curve-1.cn" writecn
+      } elseif { $y_curve == 1 } { 
+         MD++ finalcnfile = "y-curve-1.cn" writecn
       } 
       exitmd
     } else { 
       if { $x_curve == 1 } { 
-         #MD++ incnfile = "y-curve-1.cn" readcn
-         MD++ incnfile = "NEBinit-2.cn" readcn
+         MD++ incnfile = "x-curve-1.cn" readcn
+#         MD++ plot sleep 
       } elseif { $y_curve == 1 } { 
-         #MD++ incnfile = "x-curve-1.cn" readcn
-         MD++ incnfile = "NEBinit-1.cn" readcn
+         MD++ incnfile = "y-curve-1.cn" readcn
       } 
     } 
+    if { $USEGPU == 1 } {
+      MD++ cuda_memcpy_all
+    }
     MD++ plot
      
     MD++ x_eigen_strain = 0.7323
-    MD++ y_eigen_strain = 1.43
+    MD++ y_eigen_strain = 1.42
 
 #    MD++ relaxation_algorithm =  PRPLUS
     MD++ conj_fixbox = 1 
-    MD++  conj_ftol = 1e-2 conj_itmax = 2600 conj_fevalmax = 130000 relax 
+    if { $x_curve == 1} { 
+      MD++  conj_ftol = 1e-5 conj_itmax = 2600 conj_fevalmax = 130000 relax 
+    } else {
+      MD++  conj_ftol = 1e-5 conj_itmax = 2600 conj_fevalmax = 130000 relax 
+    }
     MD++ eval 
-    MD++ finalcnfile = "curve-2.cn" writecn
+    if { $y_curve == 1 } { 
+      MD++ finalcnfile = "NEBinit-0.cn" writecn
+    } else { 
+      MD++ finalcnfile = "NEBinit-1.cn" writecn
+    }
 
     MD++ plot
     MD++ writeall = 1
@@ -363,21 +369,28 @@ if { $status == 0 } {
   } elseif { $pbid == 3 } {
     MD++ RtoRref 
     MD++ x_eigen_strain = 0.7323
-    MD++ y_eigen_strain = 1.43
+    MD++ y_eigen_strain = 1.42
     MD++ x_eigen_zbound_min = -10
     MD++ x_eigen_zbound_max =  0
     MD++ y_eigen_zbound_min = -10
     MD++ y_eigen_zbound_max =  0
 
-    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn
-    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn 
+    set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
 
     MD++ incnfile = $initNEBfile readcn saveH
+    #setup_window
+    #openwindow
+    #MD++ eval plot sleep 
+
     MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
     MD++ incnfile = $initNEBfile readcn setconfig1
     MD++ fixallatoms  constrain_fixedatoms freeallatoms
-    MD++ {  chainlength = 24 allocchain   totalsteps = 1
-      timestep = 0.00001 printfreq = 10
+    if { $USEGPU == 1 } {
+      MD++ cuda_memcpy_all
+    }
+    MD++ {  chainlength = 48 allocchain   totalsteps = 50000
+      timestep = 0.0001 printfreq = 100
       initRchain
       #incnfile = neb.chain.500 readRchain
       nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
@@ -542,85 +555,154 @@ if { $status == 0 } {
   }
   MD++ quit
 
-# Start from an earlier chain of states. 
-} elseif { $status == 6 } {
-
-#same as status = 7, neb for 3d, pbid = 7, mesh13. .
-} elseif { $status == 8 } {
+#MPI stringrelax_parallel
+} elseif { $status == 3 } {
   MD++ RtoRref
-  #set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  #set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-2.cn 
-  
-  set initNEBfile ../fem-0-$pbid-$meshid/stateA.cn
-  set finalNEBfile ../fem-0-$pbid-$meshid/stateB.cn 
-  
+  set ncpu [ MD++_Get numDomains ]
+  if { $ncpu < 1 } { set ncpu 1 }
+  puts "ncup = $ncpu"
+    
+  MD++ Slave_chdir
+  set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+  set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
   MD++ incnfile = $initNEBfile readcn saveH
   MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
   MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-  
-  for { set niter 0 } { $niter < $n_bdy_nodes } { incr niter 1 } {
-      set bnd [ MD++_Get bNds($niter) ]
-      set bid [ MD++_Get bTags($niter) ]
-      set xb  [ MD++_Get bXs($niter) ]
-      set yb  [ MD++_Get bYs($niter) ]
-      set zb  [ MD++_Get bZs($niter) ]
-  
-      set xmax 8
-      set ymax 8
-      set zmax 0.125
-      set zloc [expr abs(abs($zb) - $zmax)]
-      set yloc [expr abs(abs($yb) - $ymax)]
-      set xloc [expr abs(abs($xb) - $xmax)]
-  
-      if { $xloc < 0.001 && $yloc < 0.001 & $zloc < 0.001 } {
-  	    puts "bnd = $bnd is fixed"
-  	    #MD++ fixed($bnd) = 1	    
-  	}
-  }
-	
-  MD++ {  chainlength = 24 allocchain   totalsteps = 50000
-#500
-#chainlength = 20 allocchain   totalsteps = 500
-    timestep = 0.00001 printfreq = 2
 
+  if { $pbid == 3 } {
+      MD++ x_eigen_strain = 0.7323
+      MD++ y_eigen_strain = 1.42
+      MD++ x_eigen_zbound_min = -10
+      MD++ x_eigen_zbound_max =  0
+      MD++ y_eigen_zbound_min = -10
+      MD++ y_eigen_zbound_max =  0
+  }
+
+  set check [ glob -nocomplain "stringrelax.chain.cn.cpu00" ]
+  set exist [ llength $check ]
+  if { $exist > 0 } {
+     for { set i 0 } { $i < $ncpu } { incr i 1 } {
+         set ival [ format %02d $i ]
+         exec cp stringrelax.chain.cn.cpu$ival Prev_stringrelax.chain.cn.cpu$ival
+     }
+     exec cp stringeng.out Prev_stringeng.out
+  }
+
+  set chainlength [expr $ncpu - 1]
+  MD++ chainlength = $chainlength  
+  MD++ timestep = 0.0001 printfreq = 10
+
+  MD++ nebspec = \[ 0 1 0 1 0 0 1 \] totalsteps = 10000 equilsteps = 10000
+  MD++ fixallatoms  constrain_fixedatoms freeallatoms
+
+  MD++ allocchain_parallel initRchain_parallel
+  if { $exist > 0 } {
+    MD++ incnfile = stringrelax.chain.cn readRchain_parallel
+  }
+
+  MD++ Broadcast_Atoms
+  MD++ Broadcast_FEM_Param
+  MD++ Broadcast_nebsetting
+  MD++ eval_parallel
+  MD++ stringrelax_parallel_2
+
+  MD++ finalcnfile = stringrelax.chain.cn writeRchain_parallel
+  if { $ncpu == 1 }   {
+    MD++ quit
+  } else {
+    MD++ quit_all
+  }
+# Read in chain_no_${iter} from status 24, then re-do stringrelax
+} elseif { $status == 8 } {
+  MD++ RtoRref
+  set ncpu [ MD++_Get numDomains ]
+  if { $ncpu < 1 } { set ncpu 1 }
+  puts "ncup = $ncpu"
+    
+  MD++ Slave_chdir
+  set initNEBfile ../fem-view-$pbid-$meshid-$eqnType/chain_no_6.cn
+  set finalNEBfile ../fem-view-$pbid-$meshid-$eqnType/chain_no_10.cn 
+  MD++ incnfile = $initNEBfile readcn saveH
+  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+  MD++ incnfile = $initNEBfile readcn setconfig1
+
+  if { $pbid == 3 } {
+      MD++ x_eigen_strain = 0.7323
+      MD++ y_eigen_strain = 1.42
+      MD++ x_eigen_zbound_min = -10
+      MD++ x_eigen_zbound_max =  0
+      MD++ y_eigen_zbound_min = -10
+      MD++ y_eigen_zbound_max =  0
+  }
+
+  set check [ glob -nocomplain "stringrelax.chain.cn.cpu00" ]
+  set exist [ llength $check ]
+  if { $exist > 0 } {
+     for { set i 0 } { $i < $ncpu } { incr i 1 } {
+         set ival [ format %02d $i ]
+         exec cp stringrelax.chain.cn.cpu$ival Prev_stringrelax.chain.cn.cpu$ival
+     }
+     exec cp stringeng.out Prev_stringeng.out
+  }
+
+  set chainlength [expr $ncpu - 1]
+  MD++ chainlength = $chainlength  
+  MD++ timestep = 0.0001 printfreq = 10
+
+  MD++ nebspec = \[ 0 1 0 1 0 0 1 \] totalsteps = 10000 equilsteps = 10000
+  MD++ fixallatoms  constrain_fixedatoms freeallatoms
+
+  MD++ allocchain_parallel initRchain_parallel
+  if { $exist > 0 } {
+    MD++ incnfile = stringrelax.chain.cn readRchain_parallel
+  }
+
+  MD++ Broadcast_Atoms
+  MD++ Broadcast_FEM_Param
+  MD++ Broadcast_nebsetting
+  MD++ eval_parallel
+  MD++ stringrelax_parallel_2
+
+  MD++ finalcnfile = stringrelax.chain.cn writeRchain_parallel
+  if { $ncpu == 1 }   {
+    MD++ quit
+  } else {
+    MD++ quit_all
+  }
+
+} elseif { $status == 9 } {
+  MD++ RtoRref 
+  MD++ x_eigen_strain = 0.7323
+  MD++ y_eigen_strain = 1.42
+  MD++ x_eigen_zbound_min = -10
+  MD++ x_eigen_zbound_max =  0
+  MD++ y_eigen_zbound_min = -10
+  MD++ y_eigen_zbound_max =  0
+
+  set initNEBfile ../fem-view-24-$pbid-$meshid-$eqnType/chain_no_12.cn
+  set finalNEBfile ../fem-view-24-$pbid-$meshid-$eqnType/chain_no_23.cn
+
+  MD++ incnfile = $initNEBfile readcn saveH
+  #setup_window
+  #openwindow
+  #MD++ eval plot sleep 
+
+  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+  MD++ incnfile = $initNEBfile readcn setconfig1
+  MD++ fixallatoms  constrain_fixedatoms freeallatoms
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
+  MD++ {  chainlength = 24 allocchain   totalsteps = 50000
+    timestep = 0.0001 printfreq = 100
     initRchain
-#incnfile = neb.chain.500 readRchain
+    #incnfile = neb.chain.500 readRchain
     nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
-		1  #redistribution frequency
-	    ]
+        	1  #redistribution frequency
+            ]
     nebrelax
     finalcnfile = neb.chain.500 writeRchain
   }
-
-# Start from an earlier chain of states. same as status = 6, specifically for islamic 2d.
-} elseif { $status == 9 } {
-  MD++ RtoRref
-  
-  puts "meshfolder = $meshfolder"
-  set initNEBfile ../fem-0-$pbid-$meshid/NEBinit-1.cn
-  set finalNEBfile ../fem-0-$pbid-$meshid/NEBinit-2.cn 
-  
-  MD++ incnfile = $initNEBfile readcn saveH
-  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
-  MD++ incnfile = $initNEBfile readcn setconfig1
-  
-  MD++ fixallatoms  constrain_fixedatoms freeallatoms
-  MD++ readrchainspec = 20
-  MD++ {  chainlength = 20 allocchain   totalsteps = 1500
-       timestep = 0.00001 printfreq = 2
-       incnfile = ../fem-0-10-15/NEBinit-neb.chain.500 readRchain
-  }
-      
-  MD++ { 
-       nebspec = [ 0 1] 
-       nebrelax
-       finalcnfile = neb.chain.1500 writeRchain
-  }
-
-
-
 } elseif { $status == 19 } {
 
   MD++ setnolog
@@ -728,7 +810,6 @@ if { $status == 0 } {
 
 # visualization of single cpu nebrelax.
 } elseif { $status == 23 } {
-  MD++ RtoRref
   MD++ setnolog
   MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn" readcn saveH setconfig1
   MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn" readcn restoreH SHtoR setconfig2
@@ -758,37 +839,29 @@ if { $status == 0 } {
   MD++ sleepseconds = 100  sleep
   exitmd
 
-# visualization of single cpu nebrelax. 3d snapband. islamic meshid=15,pbid = 10; status =8. pbid = 7. meshid = 13. 
 } elseif { $status == 24 } {
   MD++ setnolog
-  MD++ incnfile = "../fem-0-$pbid-$meshid/stateA.cn" readcn saveH setconfig1
-  openwindow
-  MD++ plot 
-  MD++ sleepseconds = 1 sleep
-  MD++ incnfile = "../fem-0-$pbid-$meshid/stateB.cn" readcn restoreH SHtoR setconfig2
-  openwindow 
+  set chain_no 0
   set total_no 24
+  MD++ chainlength = $total_no
+  MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn" readcn saveH setconfig1
+  MD++ incnfile = "../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn" readcn restoreH SHtoR setconfig2
+
+  MD++ incnfile = "../fem-3-$pbid-$meshid-$eqnType/stringrelax.chain.cn" 
+  MD++ input = $chain_no  readRchain_parallel_toCN  RHtoS
+  setup_window
+  openwindow
   MD++ zipfiles = 0
   for { set iter 0 } { $iter <= $total_no } { incr iter 1 } {
-    MD++ incnfile ="../fem-8-$pbid-$meshid/neb.chain.500" readRchain
-     # set chain number
-    set chain_no $iter
-
-    MD++ input = $iter  copyRchaintoCN eval
-    #MD++ input = \[ 1 1 2 \] changeH_keepR
-    #MD++ input = \[ 2 2 2 \] changeH_keepR
-    #MD++ input = \[ 3 3 2 \] changeH_keepR
-    
-    if { $iter == 0 } {
-    	openwindow
-    }
-    MD++ eval plot 
-    MD++ finalcnfile = "chain_no_${chain_no}.cn"  writecn
-    MD++ finalcnfile = "chain_no_${chain_no}.cfg" writeatomeyecfg
-    MD++ sleepseconds = 2  sleep
+      set chain_no $iter
+      MD++ input = $chain_no  readRchain_parallel_toCN  RHtoS
+      MD++ plot
+      MD++ finalcnfile = "chain_no_${chain_no}.cn" writecn
+      MD++ finalcnfile = "chain_no_${chain_no}.cfg" writeatomeyecfg
+      MD++ sleepseconds = 1  sleep
   }
-  MD++  sleepseconds = 100 sleep
   exitmd
+
 } else {        
   puts "unknown status = $status"
   exitmd 
