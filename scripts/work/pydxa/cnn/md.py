@@ -45,14 +45,14 @@ class MD(data.Dataset):
         # Let`s assume every data point has the same number of features, 3*base_features*base_features
         # If a data point has more than that, we throw an error
         # If a data point has less than that, we padd with zeros
-        self.n_base_width = 124;
-        self.n_base_height = 124;
+        self.n_base_width = 128;
+        self.n_base_height = 128;
         self.n_base_features = self.n_base_width*self.n_base_height*3
 
         train_start = 0
-        train_end = 0.3
+        train_end = 0.5
 
-        test_start = 0.3
+        test_start = 0.7
         test_end = 0.9
         tol = 1e-3; #zero tolerance for dislocation length
 

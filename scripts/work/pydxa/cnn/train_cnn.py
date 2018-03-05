@@ -29,8 +29,8 @@ import md
 #from utils import progress_bar
 
 
-N_EPOCH = 100
-BATCH_SIZE = 64 #150
+N_EPOCH = 128
+BATCH_SIZE = 128
 LR = 0.1 #Initial learning rate
 nnfile = 'cnn.pkl' 
 nnparamfile = 'cnn.pkl.params'

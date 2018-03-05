@@ -28,7 +28,7 @@ def main(sys):
                                           shuffle=True, num_workers=2) 
 
 #    net = torch.load('cnn.pkl.0.0028.128') 
-    net = torch.load('cnn.pkl.0.1.64')
+    net = torch.load('cnn.pkl.0.1.128')
     net.eval()
     test_loss = 0
     correct = 0

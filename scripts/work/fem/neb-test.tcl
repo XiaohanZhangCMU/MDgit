@@ -691,8 +691,8 @@ if { $status == 0 } {
   MD++ y_eigen_zbound_min = -10
   MD++ y_eigen_zbound_max =  0
 
-  set initNEBfile ../fem-view-23-$pbid-$meshid-$eqnType/chain_no_16.cn
-  set finalNEBfile ../fem-view-23-$pbid-$meshid-$eqnType/chain_no_26.cn
+  set initNEBfile ../fem-view-23-$pbid-$meshid-$eqnType/chain_no_29.cn
+  set finalNEBfile ../fem-view-23-$pbid-$meshid-$eqnType/chain_no_35.cn
 
   MD++ incnfile = $initNEBfile readcn saveH
   #setup_window
@@ -705,7 +705,7 @@ if { $status == 0 } {
   if { $USEGPU == 1 } {
     MD++ cuda_memcpy_all
   }
-  MD++ {  chainlength = 24 allocchain   totalsteps = 50000
+  MD++ {  chainlength = 8 allocchain   totalsteps = 50000
     timestep = 0.0001 printfreq = 100
     initRchain
     #incnfile = neb.chain.500 readRchain
@@ -713,8 +713,180 @@ if { $status == 0 } {
         	1  #redistribution frequency
             ]
     nebrelax
-    finalcnfile = neb.chain.500 writeRchain
+    finalcnfile = neb_29_35.chain.500 writeRchain
   }
+
+# Manipulate several paths and put them together as an new initial path
+} elseif { $status == 10 } {
+
+  set bfld9 "../fem-9-$pbid-$meshid-$eqnType"
+  set bfld1 "../fem-1-$pbid-$meshid-$eqnType"
+  set chain_file_1 [open "${bfld9}-s13-e20/neb_13_20.chain.500" r]
+  set chain_file_2 [open "${bfld9}-s29-e35/neb_29_35.chain.500" r]
+  set chain_file_3 [open "${bfld1}/neb.chain.50000" r]
+  set path_1 [ split [read ${chain_file_1} ] "\n" ]
+  set path_2 [ split [read ${chain_file_2} ] "\n" ]
+  set path_3 [ split [read ${chain_file_3} ] "\n" ]
+  close ${chain_file_1}
+  close ${chain_file_2}
+  close ${chain_file_3}
+
+  #replace subchains of 13-20 and 29-35 of path_3 with path_1 and path_2
+  set fileout [ open neb.chain.adjusted w ]
+  set nchain [ lindex ${path_3} 0 ]
+  set nnodes [ lindex ${path_3} 1 ]
+  puts $fileout $nchain
+  puts $fileout $nnodes
+  
+  for { set i 0 } { $i < [expr $nnodes] } { incr i 1 } {
+     set nd [ lindex ${path_3} [expr $i+2] ]
+     puts $fileout $nd
+  }
+
+  set perturb 0.001
+  for { set chain 0 } { $chain <= $nchain } { incr chain 1 } {  
+    for { set node 0 } { $node < $nnodes } { incr node 1 } {
+      if { $chain >= 16 && $chain <= 18 } { 
+        set d1 [ lindex ${path_3} [expr 2+$nnodes+(15-0)*$nnodes+$node] ]
+        set x [ lindex $d1 0 ]; set y [ lindex $d1 1 ]; set z [ lindex $d1 2 ];
+        set x [ expr $x + rand()*$perturb ]
+        set y [ expr $y + rand()*$perturb ]
+        set z [ expr $z + rand()*$perturb ]
+        puts $fileout "$x $y $z"
+      } elseif { $chain >= 31 && $chain <= 32 } { 
+        set d1 [ lindex ${path_3} [expr 2+$nnodes+(30-0)*$nnodes+$node] ]
+        set x [ lindex $d1 0 ]; set y [ lindex $d1 1 ]; set z [ lindex $d1 2 ];
+        set x [ expr $x + rand()*$perturb ]
+        set y [ expr $y + rand()*$perturb ]
+        set z [ expr $z + rand()*$perturb ]
+        puts $fileout "$x $y $z"
+      } else { 
+        set d1 [ lindex ${path_3} [expr 2+$nnodes+($chain-0)*$nnodes+$node] ]
+        set x [ lindex $d1 0 ]; set y [ lindex $d1 1 ]; set z [ lindex $d1 2 ];
+        puts $fileout "$x $y $z"
+      }
+      if { $d1 == "" } { 
+        break
+      }  
+    }
+  }
+  close $fileout
+
+  MD++ RtoRref 
+  MD++ x_eigen_strain = 0.7323
+  MD++ y_eigen_strain = 1.42
+  MD++ x_eigen_zbound_min = -10
+  MD++ x_eigen_zbound_max =  0
+  MD++ y_eigen_zbound_min = -10
+  MD++ y_eigen_zbound_max =  0
+
+  set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+  set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+  MD++ incnfile = $initNEBfile readcn saveH
+  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+  MD++ incnfile = $initNEBfile readcn setconfig1
+  MD++ fixallatoms  constrain_fixedatoms freeallatoms
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
+  MD++ {  chainlength = 48 allocchain   totalsteps = 5000
+    timestep = 0.0001 printfreq = 100
+    initRchain
+    incnfile = neb.chain.adjusted readRchain
+    nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
+        	1  #redistribution frequency
+            ]
+    nebrelax
+    finalcnfile = neb.chain.5000 writeRchain
+  }
+
+} elseif { $status == 11} {
+  MD++ setnolog
+  MD++ RtoRref 
+  if { $pbid == 3 } {
+    MD++ x_eigen_strain = 0.7323
+    MD++ y_eigen_strain = 1.42
+    MD++ x_eigen_zbound_min = -10
+    MD++ x_eigen_zbound_max =  0
+    MD++ y_eigen_zbound_min = -10
+    MD++ y_eigen_zbound_max =  0
+  }
+  set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
+  set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+  MD++ incnfile = $initNEBfile readcn saveH
+  MD++ incnfile = $finalNEBfile readcn restoreH SHtoR setconfig2
+  MD++ incnfile = $initNEBfile readcn setconfig1
+  MD++ fixallatoms  constrain_fixedatoms freeallatoms
+  setup_window
+#  openwindow
+  if { $USEGPU == 1 } {
+    MD++ cuda_memcpy_all
+  }
+  MD++ {  chainlength = 48 allocchain   totalsteps = 5000
+    timestep = 0.0001 printfreq = 100
+    initRchain
+    nebspec = [ 0  #0:interpolate surrounding atoms, 1:relax surrounding atoms
+          	1  #redistribution frequency
+              ]
+  }
+
+  set nchain [MD++_Get chainlength]
+  set perturb 0.0
+  set nnodes [ MD++_Get NP ]
+  MD++ incnfile ="../fem-1-$pbid-$meshid-$eqnType/neb.chain.50000" readRchain
+  for { set iter 0 } { $iter <= $nchain } { incr iter 1 } {
+    if {$iter >=16 && $iter <=18  } { 
+      MD++ input = $iter  copyRchaintoCN
+      for { set node 0 } { $node < $nnodes } { incr node 1 } {
+        set xold [ MD++_Get SR(3*$node)  ]
+        set yold [ MD++_Get SR(3*$node+1)  ]
+        set zold [ MD++_Get SR(3*$node+2)  ]
+        set x [ expr $xold +$perturb*rand()]
+        set y [ expr $yold +$perturb*rand()]
+        set z [ expr $zold +$perturb*rand()]
+        MD++ SR([expr $node*3]) = $x
+        MD++ SR([expr $node*3+1]) = $y
+        MD++ SR([expr $node*3+2]) = $z
+      }
+      MD++ SHtoR
+      MD++ input = $iter copyCNtoRchain 
+      #MD++ conj_fevalmax = 3000 conj_fixbox = 1 relax
+      #MD++ sleepseconds = 2 sleep
+    } elseif { $iter >=31 && $iter <=32 } {
+      MD++ input = $iter  copyRchaintoCN
+      for { set node 0 } { $node < $nnodes } { incr node 1 } {
+        set xold [ MD++_Get SR(3*$node)  ]
+        set yold [ MD++_Get SR(3*$node+1)  ]
+        set zold [ MD++_Get SR(3*$node+2)  ]
+        set x [ expr $xold +$perturb*rand()]
+        set y [ expr $yold +$perturb*rand()]
+        set z [ expr $zold +$perturb*rand()]
+        MD++ SR([expr $node*3]) = $x
+        MD++ SR([expr $node*3+1]) = $y
+        MD++ SR([expr $node*3+2]) = $z
+      }
+      MD++ SHtoR
+      MD++ input = $iter  copyCNtoRchain 
+      #MD++ conj_fevalmax = 3000 conj_fixbox = 1 relax
+      #MD++ sleepseconds = 2 sleep
+    } else { 
+      MD++ input = $iter  copyRchaintoCN
+      MD++ SHtoR
+      MD++ eval plot 
+      MD++ input = $iter  copyCNtoRchain 
+    }
+  }
+#  MD++ finalcnfile = neb.chain.adjusted writeRchain
+
+  MD++ {
+#    incnfile = neb.chain.adjusted readRchain
+    nebrelax
+    finalcnfile = neb.chain.5000 writeRchain
+  }
+
+  exitmd
+
+
 } elseif { $status == 19 } {
 
   MD++ setnolog

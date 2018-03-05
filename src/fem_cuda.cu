@@ -9,6 +9,7 @@
 #include <thrust/device_free.h>
 
 #include "fem.h"
+//#define NeoHooken
 
 void FEMFrame::cuda_memory_alloc() {
   assert(allocmultiple == 1);
@@ -212,14 +213,12 @@ __global__ void kernel_snap_fem_energy_force(int _NDIM, int _NELE, int _NINT_PER
       if (_NDIM == 3) {
 		
 #if defined NeoHooken
-        Eint = 1.0/8.0 * (0.5*lambda*log(Jet)*log(Jet) - mu*log(Jet) + 0.5*mu*(C.trace()-3));
-	temp1 = I;
-	temp1*= lambda * log(Jet);
-	temp2 = I;
-	temp2 = temp2-Cinv;
-	temp2*= mu;
-	pk2  = temp1 + temp2;
-	dEdF = Fdef * pk2;
+        double C10 = 1; double D = 1e-1;
+        double jet23 = pow(Jet, -2.0/3.0);
+        double Ibar = B.trace() * jet23;
+        Eint = C10*(Ibar-3) + 1.0/D *(Jet-1)*(Jet-1);
+        dEdF = (Fdef*(invEigF*(invEigF.tran())) * 2.0*jet23 - ((Fdef.inv()).tran())*2.0/3.0 * Ibar)*C10 + ((Fdef.inv()).tran())*2.0/D *(Jet-1)*Jet;
+
 #else
         E2 = E*E;
         dEdF.clear();
