@@ -36,7 +36,7 @@ void SWFrame::initvars()
 #ifdef _SW_Si
 #ifdef _SW_ORIG    
     /* original Si version PRB 31, 5262 (1985) */
-       aa=15.27991323; bb=11.60319228; plam=45.51575;//plam=45.5343; // 
+       aa=15.27991323; bb=11.60319228; plam=45.51575;
        pgam=2.51412; acut=3.77118; pss=2.0951; rho=4.0;
 #else   
     /* modified Si parameters PRB 46, 2250 (1992) */

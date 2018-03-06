@@ -103,7 +103,7 @@ public:
     void orthoChainForce_parallel(int moveleftend, int moverightend, int yesclimbimage, int EmaxDomain, double TanMag2, 
                                   int n, double *Fm, double *Fm_global, double *Ft, double *Ft_global);
     void reparamChain_parallel(int moveleftend, int moverightend, int yesclimbimage, int EmaxDomain, 
-                               int n, double *plavg, double *plavg0, double *dR, double *Ec,
+                               int n, double *plavg, double *plavg0, double *dR, double *dR_global, double *Ec,
                                int *left_index, int *left_index_global, int *right_index, int *right_index_global,
                                double energySlope, int manualcut, int manualleftend, int manualrightend);
 
