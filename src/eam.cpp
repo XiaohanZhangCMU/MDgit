@@ -213,12 +213,6 @@ void EAMFrame::rhoeam()
             r2ij=rij.norm2();
             if(r2ij>actual2) continue;
             rmagg=sqrt(r2ij)-rmin;
-#if 0
- if (i >=10 && i <=20) { 
-	    printf("j = %d, _d_nn[%d]=%d, jpt = %d, ",j, i, nn[i], jpt);
-        printf("atom[%d], j=%d, r2ij=%e, d_rmin=%e, actual2 = %e\n",i,j, r2ij, rmin, actual2);
- }
-#endif
             nbst[i]++;
             ind = (int)(rmagg/drar);
 
@@ -234,11 +228,6 @@ void EAMFrame::rhoeam()
             }
             qq=rmagg-rval[ind];
 
-#if 0
- if (i >=10 && i <=20) { 
-      printf("atom[%d] qq=%e, rmagg=%e\n",i,qq, rmagg);
- }
-#endif
             if(idx==jdx)
             {
 #ifndef _CUBICSPLINE
@@ -247,12 +236,8 @@ void EAMFrame::rhoeam()
             //rhoi = interp(rho[jdx],rhop[jdx],drar,ind,qq);
             rhoi = spline(rho_spline[jdx],ind,qq);
 #endif
-	    if (i < -10)
-	    printf("Before: i=%d, j = %d, ind = %d, rhoi = %e, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, rhoi, i, rhotot[i], jpt, rhotot[jpt]);
             rhotot[i]+=rhoi;
             rhotot[jpt]+=rhoi;
-	    if (i < -10)
-	    printf("After: i=%d, j = %d, ind = %d, rhotot[%d] = %e, rhotot[%d]=%e\n",i,j,ind, i, rhotot[i], jpt, rhotot[jpt]);
             }
             else
             {
@@ -285,9 +270,9 @@ void EAMFrame::rhoeam()
 
     /* debug */
 #if 0
-    for(i=0;i<100;i++)
+    for(i=0;i<_NP;i++)
     {
-       INFO_Printf("atom[%d] rhotot=%e\n",i,rhotot[i]);
+        INFO_Printf("atom[%d] rho=%e\n",i,rhotot[i]);
     }
 #endif
     
@@ -311,19 +296,11 @@ void EAMFrame::rhoeam()
         embf[i] = frho[idx][ind] + qr*frhop[idx][ind];
         embfp[i] = frhop[idx][ind] +
           qr*(frhop[idx][ind+1]-frhop[idx][ind])/drhoar;
-#if 0
-	if (i < 3)
-	  printf("i = %d,ind =%d, qr = %e, embfp=%e, frhop=%e, frhop1 = %e\n", i, ind, qr, embfp[i], frhop[indx][ind], frhop[idx][ind+1]);
-#endif
 #else
         //embf[i] = interp(frho[idx],frhop[idx],drhoar,ind,qr);
         //embfp[i] = interp1(frho[idx],frhop[idx],drhoar,ind,qr);
         embf[i] = spline(frho_spline[idx],ind,qr);
         embfp[i] = spline1(frho_spline[idx],ind,qr);
-#if 0
-	if (i < 3)
-	  printf("i = %d,ind =%d, qr = %e, embfp=%e\n", i, ind, qr, embfp[i]);
-#endif
 #endif
         atpe3b[i] = embf[i];
         _EPOT_IND[i]+=atpe3b[i];
@@ -332,9 +309,9 @@ void EAMFrame::rhoeam()
 
     /* debug */
 #if 0
-    for(i=0;i<3;i++)
+    for(i=0;i<_NP;i++)
     {
-        INFO_Printf("atom[%d] embf=%e, embfp=%e, _EPOT_IND=%e, _EPOT=%e\n",i,embf[i], embfp[i], _EPOT_IND[i], _EPOT);
+       INFO_Printf("atom[%d] embf=%e\n",i,embf[i]);
     }
 #endif
 }
@@ -439,10 +416,6 @@ void EAMFrame::kraeam()
             _EPOT_IND[jpt]+= 0.5*pp;
             _EPOT+=pp;
 
-#if 0
-	    if (i <=2)
-        printf("atom[%d], j =%d, jpt = %d, fpp=%e, qq=%e, rhop[idx*NGRID+ind]=%e, embfp[jpt]=%e \n",i,j,jpt, fpp, qq, rhop[idx][ind], embfp[jpt]);
-#endif
             
             fij=rij*fp;
             _F[i]+=fij;
@@ -457,24 +430,6 @@ void EAMFrame::kraeam()
 	        _VIRIAL_IND[jpt].addnvv(-.5*fp,rij,rij);
                 //_VIRIAL.addnvv(-fp,rij,rij);
 		
-#if 0
-		if (i == 0) { 
-			printf("i = %d, j =%d\n", i, j);
-	    for(int I = 0;I<3;I++) {
-	      for(int J = 0;J<3;J++){
-	        printf("_VIRIAL_i[%d][%d]=%e ",I,J, _VIRIAL_IND[i][I][J]); 
-	      }
-	      printf("\n");
-	    }
-
-	    for(int I = 0;I<3;I++) {
-	      for(int J = 0;J<3;J++){
-	        printf("_VIRIAL_jpt[%d][%d]=%e ",I,J, _VIRIAL_IND[jpt][I][J]); 
-	      }
-	      printf("\n");
-	    }
-	    }
-#endif
 		assert(SURFTEN==0);
                 if (SURFTEN==1 && (curstep%savepropfreq)==1) AddnvvtoPtPn(_SR[jpt],rij,rij,-fp);
 #endif
@@ -482,15 +437,6 @@ void EAMFrame::kraeam()
         _VIRIAL+=_VIRIAL_IND[i];
 
     }
-    
-    /* debug */
-#if 0
-    for(i=0;i<_NP;i++)
-    {
-        INFO_Printf("atom[%d] _F=%e,%e,%e, _EPOT_IND=%e, _EPOT=%e\n",i,_F[i].x, _F[i].y, _F[i].z, _EPOT_IND[i], _EPOT);
-    }
-#endif
-
 }
 #endif
 
@@ -1320,4 +1266,104 @@ class EAMFrame sim;
 #include "main.cpp"
 
 #endif//_TEST
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
+/* old code */
+#if 0
+
+inline double interp(double func[],double deriv[],double dr,int ind,double qq)
+{
+    double f, a, b, c, d, f1, p1, A1, A2, dr2, dr3, qq2, qq3;
+//    f = func[ind] + qq*deriv[ind];
+    dr2=dr*dr; dr3=dr2*dr;
+    qq2=qq*qq; qq3=qq2*qq;
+    a = func[ind];
+    b = deriv[ind];
+    f1 = func[ind+1];
+    p1 = deriv[ind+1];
+    A1 = f1-a-b*dr;
+    A2 = (p1-b)*dr;
+    d = (A2-2*A1)/dr3;
+    c = (3*A1-A2)/dr2;
+    f=a+b*qq+c*qq2+d*qq3;
+    return f;
+}
+    
+    
+inline double interp1(double func[],double deriv[],double dr,int ind,double qq)
+{
+    double fp, a, b, c, d, f1, p1, A1, A2, dr2, dr3, qq2, qq3;
+//    fp = deriv[ind] + qq1/dr*(deriv[ind+1]-deriv[ind]);
+    dr2=dr*dr; dr3=dr2*dr;
+    qq2=qq*qq; qq3=qq2*qq;
+    a = func[ind];
+    b = deriv[ind];
+    f1 = func[ind+1];
+    p1 = deriv[ind+1];
+    A1 = f1-a-b*dr;
+    A2 = (p1-b)*dr;
+    d = (A2-2*A1)/dr3;
+    c = (3*A1-A2)/dr2;
+    fp=b+2*c*qq+3*d*qq2;
+    return fp;
+}
+#endif
