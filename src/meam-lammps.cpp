@@ -739,6 +739,7 @@ void MEAMFrame::Broadcast_MEAM_Param()
 //                myDomain,meamfile,0,element[0],1,element[1]);
 
     MPI_Bcast(meamfile,1000,MPI_CHAR,0,MPI_COMM_WORLD);
+    MPI_Bcast(meafile,1000,MPI_CHAR,0,MPI_COMM_WORLD); //xiaohan add this line
     MPI_Bcast(element,MAXSPECIES*10,MPI_CHAR,0,MPI_COMM_WORLD);
 
 //    INFO_Printf("[%d]: meamfile = %s element[%d]=%s element[%d]=%s\n",

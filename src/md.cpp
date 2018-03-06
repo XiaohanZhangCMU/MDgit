@@ -3227,120 +3227,7 @@ int MDFrame::runMDSWITCH()
 //    return 0;
 //}
 
-//Only works for ni-cs
-void MDFrame::wrapper_run(){
-
-  double n6 = 450;
-
-  double sigma_xy  = 0.0;
-  double sigma_yz  = 300;
-  double sigma_zz  = -2015.254326;
-  double sigma_yy  = 2015.254326;
-  double sigma_xz  = 848.528137;
-  double sigma_xx  = 0.0;
-
-
-  double newT = 300;
-  int maxiter = totalsteps/200;
-  double delta_T = (n6-300)*2 / maxiter;
-  for (int iter = 0; iter < maxiter; iter++) { 
-
-    double sig_avg_xx = 0;
-    double sig_avg_yy = 0;
-    double sig_avg_zz = 0;
-    double sig_avg_xy = 0;
-    double sig_avg_yz = 0;
-    double sig_avg_xz = 0;
-
-    double factor = 0;
-    
-    if ( iter < 50 ) {
-       factor = 400.0e3;
-    } else if (iter < 100 ) {
-       factor = 800.0e3;
-    } else if (iter < 150 ) {
-       factor = 1200.0e3;
-    } else if (iter <= 200)  {
-       factor = 1600.0e3;
-    } else {
-       factor = 2000.0e3;
-    }
-    
-    if ( newT < n6 ) {
-    	newT += delta_T;
-       _TDES = newT;
-    }
-    
-
-    for (int subiter = 0; subiter < 20; subiter ++) {
-       continue_curstep = 1;
-       totalsteps = 10 ;
-       run();
-       double sig_xx = _TOTSTRESSinMPa[0][0];
-       double sig_yy = _TOTSTRESSinMPa[1][1];
-       double sig_zz = _TOTSTRESSinMPa[2][2];
-       double sig_xy = _TOTSTRESSinMPa[0][1];
-       double sig_yz = _TOTSTRESSinMPa[1][2];
-       double sig_xz = _TOTSTRESSinMPa[0][2];
-       printf("sig_xx = %e sig_yy = %e sig_zz = %e\n", sig_xx, sig_yy, sig_zz);
-       printf("sig_yz = %e sig_xz = %e sig_xy = %e\n", sig_yz, sig_xz, sig_xy);
-
-       if ( subiter > 10 ) {
-          sig_avg_xx += sig_xx;
-          sig_avg_yy += sig_yy;
-          sig_avg_zz += sig_zz;
-          sig_avg_xy += sig_xy;
-          sig_avg_yz += sig_yz;
-          sig_avg_xz += sig_xz;
-       }
-    }
-    sig_avg_xx /= 10.0;
-    sig_avg_yy /= 10.0;
-    sig_avg_zz /= 10.0;
-    sig_avg_xy /= 10.0;
-    sig_avg_yz /= 10.0;
-    sig_avg_xz /= 10.0;
-
-       printf("sig_avg_xx = %e sig_avg_yy = %e sig_avg_zz = %e\n", sig_avg_xx, sig_avg_yy, sig_avg_zz);
-       printf("sig_avg_yz = %e sig_avg_xz = %e sig_avg_xy = %e\n", sig_avg_yz, sig_avg_xz, sig_avg_xy);
-
-    if ( iter < maxiter ) {
-       double xx_err = sig_avg_xx - sigma_xx;
-       double yy_err = sig_avg_yy - sigma_yy;
-       double zz_err = sig_avg_zz - sigma_zz;
-       double xz_err = sig_avg_xz - sigma_xz;
-       double yz_err = sig_avg_yz - sigma_yz;
-       double delta_xx = xx_err / factor; 
-       double delta_yy = yy_err / factor; 
-       double delta_zz = zz_err / factor; 
-       double delta_xz = xz_err / factor; 
-       input[0] =1; input[1] =1; input[2] = delta_xx; shiftbox(); // ={ 1, 1, delta_xx }; shiftbox();
-       input[0] =1; input[1] =1; input[2] = delta_xx; shiftbox(); //input ={ 2, 2, delta_yy }; shiftbox();
-       input[0] =1; input[1] =1; input[2] = delta_xx; shiftbox(); //input ={ 3, 3, delta_zz }; shiftbox();
-       input[0] =1; input[1] =1; input[2] = delta_xx; shiftbox(); //input ={ 3, 1, delta_xz }; shiftbox();
-       swap_velocities(20);
-    }
-  }
-}
-
-void MDFrame::swap_velocities ( double v_ratio ) { 
-  int maxAtomsPerturbed = _NP*1.0/v_ratio;
-  Vector3 v = _VSR[0];
-  for (int i = 0; i < maxAtomsPerturbed ; i++)  {
-     int atom =  int(rand()*_NP);
-     int ind = atom*3;
-     Vector3 v0 = _VSR[ind];
-     _VSR[ind] = v;
-    // if (i == 0 ) {
-    //   puts "vx = $vx, vx0 = $vx0"
-    //   puts "vy = $vy, vy0 = $vy0"
-    //   puts "vz = $vz, vz0 = $vz0"
-    //   puts "..."
-    // }
-     v = v0;
-  }
-}
-
+#include "wrapper_run.cpp"
 
 void MDFrame::run()
 {
@@ -7534,6 +7421,7 @@ void MDFrame::nebrelax()
    
     /* calculate center-of-mass shift from _SR1 (state A) to _SR2 (state B) */ 
     caldscom12();
+
     /* compute current constrain value */
     constrain_dist=0; 
     for(i=0;i<n;i++)
@@ -7655,6 +7543,9 @@ void MDFrame::stringrelax()
     Vector3 ds0; 
     double s, lavg0, lavg, E0, Emax;
     double *Ec, *Fm, *Ft, *Fs, *dR, *Lc, *TangMag2; Vector3 **dTang; void *c;
+    int *left_index, *right_index;
+    int rightendEnergyTooHigh, myEnergyTooHigh, manualcut, manualleftend, manualrightend, cgstepsmid,cgstepsrightend;
+    double energySpike, energySlope;
     FILE *fp;
     
     INFO("String Relax");
@@ -14114,30 +14005,27 @@ int LAMMPSFile::writeblock(void *p)
     class Vector3 c1, c2, c3;
     MDFrame &d=*((MDFrame *)p);
     
-    WARNING("******************************************");
-    WARNING("* only valid for rectangular supercells! *");
-    WARNING("******************************************");
+    if (d._H[1][0] != 0 && d._H[2][1] != 0 && d._H[2][0] != 0)
+    {
+        d._H=d._H.reorient();
+        WARNING("***********************************************");
+        WARNING("* H is reoriented to upper triangular matrix! *");
+        WARNING("***********************************************");
+    }
 
-    c1.set(d._H[0][0],d._H[1][0],d._H[2][0]); 
-    c2.set(d._H[0][1],d._H[1][1],d._H[2][1]);
-    c3.set(d._H[0][2],d._H[1][2],d._H[2][2]);
-    xmag = c1.norm(); ymag = c2.norm(); zmag = c3.norm();
+    xmag = d._H[0][0]; ymag = d._H[1][1]; zmag = d._H[2][2];
         
     f->Printf("LAMMPS data file by MD++ [%s]\n",d.dirname);
     f->Printf("%d atoms\n",d._NP);
     f->Printf("%d atom types\n",d.nspecies);
-//    f->Printf("%25.17e %25.17e xlo xhi\n",-xmag/2,xmag/2);
-//    f->Printf("%25.17e %25.17e ylo yhi\n",-ymag/2,ymag/2);
-//    f->Printf("%25.17e %25.17e zlo zhi\n\n",-zmag/2,zmag/2);
     f->Printf("0 %25.17e xlo xhi\n",xmag);
     f->Printf("0 %25.17e ylo yhi\n",ymag);
-    f->Printf("0 %25.17e zlo zhi\n\n",zmag);
-
+    f->Printf("0 %25.17e zlo zhi\n",zmag);
+    f->Printf("%25.17e %25.17e %25.17e xy xz yz\n\n", d._H[0][1],d._H[0][2],d._H[1][2]);
 
     f->Printf("Masses\n\n");
 
     // Changed here SA Jul 30 2008
-    //f->Printf("1 %12.9e \n\n",d._ATOMMASS);
     for(i=0;i<d.nspecies;i++)
       f->Printf("%d %12.9e \n",i+1,d._ATOMMASS[i]);
     f->Printf("\n");
@@ -14177,6 +14065,7 @@ int LAMMPSFile::writeblock(void *p)
         }
     }   
     return 0;
+
 }
 
 

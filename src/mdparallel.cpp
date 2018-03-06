@@ -1181,7 +1181,7 @@ void MDPARALLELFrame::commNeighborRc(int n)
 void MDPARALLELFrame::calChainTang_parallel(int n, double *Ec, double *dR, double *dR_global, double *pTanMag2)
 {
     int i;
-    double dEmax, dEmin, r2;
+    double r2;
     Vector3 dt;
 
     /* calculate tangential vector, _Tan */
@@ -1192,6 +1192,12 @@ void MDPARALLELFrame::calChainTang_parallel(int n, double *Ec, double *dR, doubl
     /* calculate tangential vector */
     if((myDomain>0)&&(myDomain<_CHAINLENGTH))
     {
+#if 1
+        /* do not use Ec to calculate tangent vector */
+        for(i=0;i<n;i++) // n: number of constrained atoms
+            _Tan[i] = _Rc2[i]-_Rc1[i];
+#else
+        /* use Ec to calculate tangent vector, consistent with nebrelax_parallel() */
         if (((Ec[myDomain+1]-Ec[myDomain]>0) && (Ec[myDomain-1]-Ec[myDomain]>0)) ||
             ((Ec[myDomain+1]-Ec[myDomain]<0) && (Ec[myDomain-1]-Ec[myDomain]<0))) // convex or concave profile
         {
@@ -1230,32 +1236,24 @@ void MDPARALLELFrame::calChainTang_parallel(int n, double *Ec, double *dR, doubl
                 }
             }
         }
-        
-        *pTanMag2 = 0;        
-        for(i=0;i<n;i++) // compute magnitude squared of tangential vector
-            *pTanMag2 += _Tan[i].norm2();
+#endif 
     }
-    
-    /* calculate tangential vector at the left end */
+
     if(myDomain==0)
     {
-        *pTanMag2 = 0;
-        for(i=0;i<n;i++)
-        {
-            _Tan[i]= _Rc2[i]-_Rc0[i];
-            *pTanMag2 += _Tan[i].norm2();
-        }
-    }   
-    /* calculate tangential vector at the right end */
+        for(i=0;i<n;i++) // n: number of constrained atoms
+            _Tan[i] = _Rc2[i]-_Rc0[i];
+    }
+        /* calculate tangential vector at the right end */
     if(myDomain==_CHAINLENGTH)
     {
-        *pTanMag2 = 0;
-        for(i=0;i<n;i++)
-        {
-            _Tan[i]= _Rc0[i]-_Rc1[i];
-            *pTanMag2 += _Tan[i].norm2();
-        }
+        for(i=0;i<n;i++) // n: number of constrained atoms
+            _Tan[i] = _Rc0[i]-_Rc1[i];
     }
+
+    *pTanMag2 = 0;        
+    for(i=0;i<n;i++) // compute magnitude squared of tangential vector
+        (*pTanMag2) += _Tan[i].norm2();
 
     /* calculate chain segment length dR[j] = | Rc[j] - Rc[j-1] | */
     memset(dR,0,sizeof(double)*(_CHAINLENGTH+1));
@@ -1271,62 +1269,70 @@ void MDPARALLELFrame::calChainTang_parallel(int n, double *Ec, double *dR, doubl
     }
     MPI_Allreduce(dR,dR_global,(_CHAINLENGTH+1),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     memcpy(dR,dR_global,sizeof(double)*(_CHAINLENGTH+1));
-
 }
 
 void MDPARALLELFrame::orthoChainForce_parallel(int moveleftend, int moverightend, int yesclimbimage, int EmaxDomain, double TanMag2, int n, double *Fm, double *Fm_global, double *Ft, double *Ft_global)
 {
     int i;
     double fr, fm2;
-    Vector3 dt;
+    Vector3 dt, df, dg;
 
     /* orthogonalize forces _Fc against local tangent vector _Tan */
     memset(Fm,0,sizeof(double)*(_CHAINLENGTH+1));
     memset(Ft,0,sizeof(double)*(_CHAINLENGTH+1));
 
-    if((myDomain>=0)&&(myDomain<=_CHAINLENGTH))
+    if(   ((myDomain>0)&&(myDomain<_CHAINLENGTH))
+       ||  (moveleftend>0  && myDomain==0) 
+       ||  (moverightend>0 && myDomain==_CHAINLENGTH) )
     {
         fr=0;            
         for(i=0;i<n;i++)
             fr+=dot(_Fc0[i],_Tan[i]);
         Ft[myDomain] = fr/sqrt(TanMag2);
         fr /= TanMag2; // normalizing
-        
+    
         fm2=0;
         for(i=0;i<n;i++) /* orthogonalizing force against tangential vector */
         {
-            dt=_Tan[i]*fr;   // tangential force vector
+            dt = _Tan[i]*fr;   // tangential force vector
+            df = _Fc0[i]; 
+            dg = _Fc0[i];
+            dg -= dt;     
+            fm2 += dg.norm2();
 
-            if ((myDomain==0 && moveleftend==3) || (myDomain==_CHAINLENGTH && moverightend==3))
+            if(   (myDomain>0)&&(myDomain<_CHAINLENGTH) )
+            {  /* orthogonalize forces */
+                _Fc0[i] -= dt;
+                if (yesclimbimage && (curstep>=equilsteps) && myDomain==EmaxDomain) _Fc0[i] -= dt;
+            } else if ((myDomain==0 && moveleftend==1) || (myDomain==_CHAINLENGTH && moverightend==1))
+            {  /* orthogonalize forces */
+                _Fc0[i] -= dt;
+            } else if ((myDomain==0 && moveleftend==2) || (myDomain==_CHAINLENGTH && moverightend==2))
+            { /* set force along local tangent direction */
+               _Fc0[i] = dt;
+            } else if ((myDomain==0 && moveleftend==3) || (myDomain==_CHAINLENGTH && moverightend==3))
             {
                /* ends move in free fall, do not orthogonalize forces */
-            } else if ((myDomain==0 && moveleftend==2) || (myDomain==_CHAINLENGTH && moverightend==2))
-            {
-               /* set force along local tangent direction */
-               _Fc0[i] = dt;
-            } else {
-               /* orthogonalize forces */
-               _Fc0[i] -= dt;
             }
-            fm2 += _Fc0[i].norm2();
-
-            if (yesclimbimage && (curstep>=equilsteps) && myDomain==EmaxDomain)
-               _Fc0[i]-=dt;   // revert the force along tangent direction for climbing image
         }
         Fm[myDomain] = sqrt(fm2); /* store residual force magnitude */
     }
-    MPI_Allreduce(Fm,Fm_global,(_CHAINLENGTH+1),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+    MPI_Allreduce(Fm,Fm_global,(_CHAINLENGTH+1),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD); 
     memcpy(Fm,Fm_global,sizeof(double)*(_CHAINLENGTH+1));
     MPI_Allreduce(Ft,Ft_global,(_CHAINLENGTH+1),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     memcpy(Ft,Ft_global,sizeof(double)*(_CHAINLENGTH+1));
 
 }
 
-void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, int yesclimbimage, int EmaxDomain, int n, double *plavg, double *plavg0, double *dR, double *Ec, int *left_index, int *left_index_global, int *right_index, int *right_index_global, double energySlope, int manualcut, int manualleftend, int manualrightend)
+
+void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, int yesclimbimage, int EmaxDomain, int n, double *plavg, double *plavg0, double *dR, double *dR_global, double *Ec, int *left_index, int *left_index_global, int *right_index, int *right_index_global, double energySlope, int manualcut, int manualleftend, int manualrightend)
 {
     int i, jj, leftendDomain, rightendDomain, lowleft, lowright, nin, nout;
-    double Ltot, new_position, alpha;
+    double Ltot, new_position, alpha, r2;
     Vector3 dt;
+    int ipt;
+    Matrix33 hinv;
 
     /* assume that dR has already been calculated immediately before calling this function 
      *  e.g. by 
@@ -1345,7 +1351,7 @@ void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, i
     }
     else
     {
-        if (moveleftend) 
+        if (moveleftend!=0) /* 1, 2, 3, or -1 (do not move but allow cut) */
         {
             /* Get the lowest energy configurations to the left of the 
              * maximum energy configuration. */
@@ -1359,7 +1365,7 @@ void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, i
             leftendDomain = lowleft; 
             while(Ec[leftendDomain+1]-Ec[0] < 0) leftendDomain++;
         }
-        if (moverightend) 
+        if (moverightend!=0) /* 1, 2, 3, or -1 (do not move but allow cut) */
         {
             /* Get the lowest energy configurations to the left of the 
              * maximum energy configuration. */
@@ -1378,6 +1384,23 @@ void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, i
     {
         ERROR("reparamChain_parallel: not compatible with yesclimbimage!");
     }
+
+    commNeighborRc(n);
+
+    /* calculate chain segment length dR[j] = | Rc[j] - Rc[j-1] | */
+    memset(dR,0,sizeof(double)*(_CHAINLENGTH+1));
+    if((myDomain>=1)&&(myDomain<=_CHAINLENGTH))
+    {
+        r2 = 0;
+        for(i=0;i<n;i++) 
+        { 
+            dt=_Rc0[i]-_Rc1[i]; 
+            r2+=dt.norm2(); 
+        }
+        dR[myDomain] = sqrt(r2);
+    }
+    MPI_Allreduce(dR,dR_global,(_CHAINLENGTH+1),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    memcpy(dR,dR_global,sizeof(double)*(_CHAINLENGTH+1));
 
     /* calculate the total length from leftendDomain to rightendDomain */
     Ltot = 0.0;
@@ -1398,11 +1421,14 @@ void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, i
     if (left_index[myDomain] == _CHAINLENGTH) {
         left_index[myDomain] = _CHAINLENGTH-1; 
         right_index[myDomain] = _CHAINLENGTH;
-        alpha = 1;
+        /* to be consistent with stringrelax_parallel_2, although setting alpha = 1 is more preferred */
+        new_position += dR[right_index[myDomain]]; 
     } else { 
         right_index[myDomain] = left_index[myDomain] + 1; 
-        alpha = new_position/dR[right_index[myDomain]];
     }
+
+    alpha = new_position/dR[right_index[myDomain]];
+
     MPI_Allreduce(left_index,left_index_global,(_CHAINLENGTH+1),MPI_INT,MPI_SUM,MPI_COMM_WORLD);
     memcpy(left_index,left_index_global,sizeof(int)*(_CHAINLENGTH+1));
     MPI_Allreduce(right_index,right_index_global,(_CHAINLENGTH+1),MPI_INT,MPI_SUM,MPI_COMM_WORLD);
@@ -1436,8 +1462,16 @@ void MDPARALLELFrame::reparamChain_parallel(int moveleftend, int moverightend, i
         _Rc0[i] = _Rc1[i]*(1.0-alpha)+_Rc2[i]*alpha;
     }
 
-    /* update new positions of the neighbor chains */
-    commNeighborRc(n);
+    /* copy _Rc0 to _SR */ /* is this really necessary ??? */
+    hinv = _H.inv();
+    for(i=0;i<n;i++)
+    {
+        ipt=constrainatoms[i+1];
+        _SR[ipt]=hinv*_Rc0[i];
+    }
+
+    /* update new positions of the neighbor chains (no longer needed) */
+    /* commNeighborRc(n); */
 }
 
 void MDPARALLELFrame::nebrelax_parallel()
@@ -1677,7 +1711,7 @@ void MDPARALLELFrame::stringrelax_parallel()
     if (energySlope == 0)
        { energySlope = 0.01; WARNING("Automatically set energythreshold(1) to 0.01"); }
 
-    if (moveleftend && myDomain == 0) 
+    if (moveleftend>0 && myDomain == 0) 
        { ERROR("string: moveleftend not yet implemented"); }
 
     if (yesclimbimage && myDomain == 0)
@@ -1710,6 +1744,8 @@ void MDPARALLELFrame::stringrelax_parallel()
     allocChainVars_parallel(&Ec, &Ec_global, &Fm, &Fm_global, &Ft, &Ft_global, &Fs, &Fs_global, &dR, &dR_global);
     allocChainIndex_parallel(&left_index, &left_index_global, &right_index, &right_index_global);
 
+    _Ec = Ec; // store pointer to member variable
+
     /* calculate center-of-mass shift from _SR1 (state A) to _SR2 (state B) */
     caldscom12();
     /* compute current constraint value (not really necessary) */
@@ -1740,7 +1776,7 @@ void MDPARALLELFrame::stringrelax_parallel()
     if (manualcut)         
     {
        EmaxDomain = 0;
-       reparamChain_parallel(moveleftend, moverightend, yesclimbimage, EmaxDomain, n, &lavg, &lavg0, dR, Ec,
+       reparamChain_parallel(moveleftend, moverightend, yesclimbimage, EmaxDomain, n, &lavg, &lavg0, dR, dR_global, Ec,
                              left_index, left_index_global, right_index, right_index_global, 
                              energySlope, manualcut, manualleftend, manualrightend);
     }
@@ -1754,6 +1790,7 @@ void MDPARALLELFrame::stringrelax_parallel()
 
         /* Get atomic forces to _Fc array along the entire chain */
         calChainForce_parallel(n, relax_surround, Ec, Ec_global);
+        commNeighborRc(n);
 
         /* Find max-energy replica (i.e. the saddle point) */
         EmaxDomain = 0; Emax=E0;
@@ -1826,7 +1863,7 @@ void MDPARALLELFrame::stringrelax_parallel()
                         ipt=constrainatoms[i+1];
                         _SR[ipt]=hinv*_Rc0[i];
                     }
-                    if ( myDomain!=_CHAINLENGTH ) conj_fevalmax = cgstepsmid; 
+                    if ( myDomain!=_CHAINLENGTH && myDomain!=0) conj_fevalmax = cgstepsmid; 
                     else conj_fevalmax = cgstepsrightend;
                     if (curstep == step0)
                     {
@@ -1856,8 +1893,7 @@ void MDPARALLELFrame::stringrelax_parallel()
             if(curstep%redistri_freq==0) 
             {
                  /* update new positions of the neighbor chains _Rc0 */
-                 calChainTang_parallel(n, Ec, dR, dR_global, &TanMag2);
-                 reparamChain_parallel(moveleftend, moverightend, yesclimbimage, EmaxDomain, n, &lavg, &lavg0, dR, Ec,
+                 reparamChain_parallel(moveleftend, moverightend, yesclimbimage, EmaxDomain, n, &lavg, &lavg0, dR, dR_global, Ec,
                            left_index, left_index_global, right_index, right_index_global, energySlope, 0, 0, 0);
             }
 

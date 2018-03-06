@@ -1156,6 +1156,8 @@ void FEMFrame::Broadcast_FEM_Param()
   int n_int_param, n_double_param, i, j, k, m, iA, iN, ind, start, size,
     *buf_int;
   double *buf_double;
+
+    INFO_Printf("Broadcast_FEM_Param[%d]/%d: \n", myDomain, numDomains);
       
   if(myDomain==0) { 
     Master_to_Slave("Broadcast_FEM_Param");    
@@ -1166,8 +1168,12 @@ void FEMFrame::Broadcast_FEM_Param()
       //_NELE, _NNODE_PER_ELEMENT, _NINT_PER_ELEMENT, _NDIM
       + 4 
       //n_bdy_nodes, n_bdy_tags, n_existed_atoms, nfemNodes
-      + 4;
-      n_double_param = n_bdy_nodes*3 + _NINT_PER_ELEMENT + _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT * _NELE;
+      + 4 
+      //_EquationType
+      + 1;
+      n_double_param = n_bdy_nodes*3 + _NINT_PER_ELEMENT + _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT * _NELE ;
+
+      if (_EquationType == 2) n_double_param +=6; //eigen strain params
       
       buf_int = (int *) malloc(n_int_param*sizeof(int));
       buf_double = (double *) malloc(n_double_param*sizeof(double));
@@ -1182,6 +1188,7 @@ void FEMFrame::Broadcast_FEM_Param()
       buf_int[start++] = n_bdy_tags;
       buf_int[start++] = n_existed_atoms;
       buf_int[start++] = nfemNodes;
+      buf_int[start++] = _EquationType;
 
       for(i= 0;i<n_bdy_nodes;i++) 
       	buf_int[start++] = bNds[i];
@@ -1213,7 +1220,7 @@ void FEMFrame::Broadcast_FEM_Param()
       	buf_double[start++] = gauss_weight[iA];      
 
       for(int iele = 0;iele <_NELE;iele++) {
-	int dfdustart = iele *  _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT;
+//	int dfdustart = iele *  _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT;
       
 	for(iA=0;iA<_NINT_PER_ELEMENT;iA++) 
 	  for(j =0;j<_NDIM;j++)
@@ -1221,10 +1228,17 @@ void FEMFrame::Broadcast_FEM_Param()
 	      for(m=0;m<_NDIM;m++)
 		for(iN=0;iN<_NNODE_PER_ELEMENT;iN++) {
 		  ind = (((iA*_NDIM+j)*_NDIM+k)*_NDIM+m)*_NNODE_PER_ELEMENT+iN;
-		  buf_double[dfdustart++] = dFdu[start+ind];
+		  buf_double[start++] = dFdu[ind];
 		}    
       }
-      //INFO_Printf("myDomain = %d, start = %d, n_double_param = %d\n", myDomain, start, n_double_param);
+
+      buf_double[start++] = x_eigen_strain;
+      buf_double[start++] = y_eigen_strain;
+      buf_double[start++] = x_eigen_zbound_min;
+      buf_double[start++] = x_eigen_zbound_max;
+      buf_double[start++] = y_eigen_zbound_min;
+      buf_double[start++] = y_eigen_zbound_max;
+      INFO_Printf("myDomain = %d, start = %d, n_double_param = %d\n", myDomain, start, n_double_param);
       assert(start == n_double_param);
   }
 
@@ -1261,6 +1275,7 @@ void FEMFrame::Broadcast_FEM_Param()
       n_bdy_tags =  buf_int[start++];
       n_existed_atoms = buf_int[start++];
       nfemNodes = buf_int[start++];
+      _EquationType = buf_int[start++];
 
       //allocate memeories on cpu 1-ncpu
       assert(n_bdy_nodes > 0 && n_bdy_tags > 0 && _NP>0 && allocmultiple !=0);       
@@ -1310,17 +1325,25 @@ void FEMFrame::Broadcast_FEM_Param()
       }
 
       for(int iele = 0;iele <_NELE;iele++) {
-	int dfdustart = iele *  _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT;
+//	int dfdustart = iele *  _NINT_PER_ELEMENT*_NDIM*_NDIM*_NDIM*_NNODE_PER_ELEMENT;
 	for(iA=0;iA<_NINT_PER_ELEMENT;iA++) 
 	  for(j =0;j<_NDIM;j++)
 	    for(k=0;k<_NDIM;k++)
 	      for(m=0;m<_NDIM;m++)
 		for(iN=0;iN<_NNODE_PER_ELEMENT;iN++) {
 		  ind = (((iA*_NDIM+j)*_NDIM+k)*_NDIM+m)*_NNODE_PER_ELEMENT+iN;
-		  dFdu[dfdustart+ind] = buf_double[start++];
+		  dFdu[ind] = buf_double[start++];
 		}    
       }
       //INFO_Printf("About to quit:: myDomain = %d, start = %d, n_double_param = %d\n", myDomain, start, n_double_param);
+
+      x_eigen_strain    =  buf_double[start++];
+      y_eigen_strain    =  buf_double[start++];
+      x_eigen_zbound_min=  buf_double[start++];
+      x_eigen_zbound_max=  buf_double[start++];
+      y_eigen_zbound_min=  buf_double[start++];
+      y_eigen_zbound_max=  buf_double[start++];
+
       assert(start == n_double_param);    
     }
 
@@ -1334,9 +1357,9 @@ void FEMFrame::Broadcast_FEM_Param()
 
   if (myDomain == 1 || myDomain == 0) {
     for (int i = 0;i<_NP;i++) {
-      INFO_Printf("broadcast[%d]; NP=%d; size =%d; i= %d\n",myDomain,_NP,size,i);
-      INFO_Printf("broadcast[%d];_SRref = [%f,%f], _Rref = [%f,%f]\n",myDomain, _SRref[i][0],_SRref[i][1],_Rref[i][0], _Rref[i][1]);
-      INFO_Printf("broadcast[%d]; H[00]=%f; H[1][1]=%f; H[2][2]=%f\n",myDomain,_H[0][0], _H[1][1], _H[2][2]);
+      printf("broadcast[%d]; NP=%d; size =%d; i= %d\n",myDomain,_NP,size,i);
+      printf("broadcast[%d];_SRref = [%f,%f], _Rref = [%f,%f]\n",myDomain, _SRref[i][0],_SRref[i][1],_Rref[i][0], _Rref[i][1]);
+      printf("broadcast[%d]; H[00]=%f; H[1][1]=%f; H[2][2]=%f\n",myDomain,_H[0][0], _H[1][1], _H[2][2]);
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
@@ -1349,7 +1372,6 @@ void FEMFrame::Broadcast_FEM_Param()
   return;
 }
 
-#endif//_PARALLEL
 
 
 #ifdef _TEST

@@ -29,7 +29,7 @@ import md
 #from utils import progress_bar
 
 
-N_EPOCH = 128
+N_EPOCH = 300
 BATCH_SIZE = 128
 LR = 0.1 #Initial learning rate
 nnfile = 'cnn.pkl' 
@@ -47,9 +47,9 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
         total = 0
         correct = 0
         if (epoch_id < 1.0/3 *N_EPOCH):
-            lr = LR
+            lr = 0.1*LR
         elif (epoch_id < 2.0/3*N_EPOCH):
-            lr = 0.01
+            lr = LR
         else:
             lr = 0.0028
 

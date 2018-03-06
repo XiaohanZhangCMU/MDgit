@@ -50,7 +50,7 @@ class MD(data.Dataset):
         self.n_base_features = self.n_base_width*self.n_base_height*3
 
         train_start = 0
-        train_end = 0.5
+        train_end = 0.7
 
         test_start = 0.7
         test_end = 0.9
