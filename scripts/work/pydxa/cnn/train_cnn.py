@@ -32,8 +32,8 @@ import md
 N_EPOCH = 300
 BATCH_SIZE = 128
 LR = 0.1 #Initial learning rate
-nnfile = 'cnn.pkl' 
-nnparamfile = 'cnn.pkl.params'
+nnfile = '/scratch/users/xzhang11/cnn.pkl' 
+nnparamfile = '/scratch/users/xzhang11/cnn.pkl.params'
 use_cuda = torch.cuda.is_available()
 print("use_cuda = {}".format(use_cuda))
 def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparamfile, opt):
@@ -49,7 +49,7 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
         if (epoch_id < 1.0/3 *N_EPOCH):
             lr = 0.1*LR
         elif (epoch_id < 2.0/3*N_EPOCH):
-            lr = LR
+            lr = 0.01*LR
         else:
             lr = 0.0028
 
@@ -102,11 +102,12 @@ def train_and_save( net, train_loader, test_loader, lr, N_EPOCH, nnfile, nnparam
             print("correct = {0}, total = {1}".format(correct, total))
             net.train() # switch net to 'train' mode
 
+        if epoch_id%25 ==0:
+            torch.save(net, nnfile+'.'+str(LR)+'.'+str(BATCH_SIZE)+'.'+str(epoch_id))
+            torch.save(net.state_dict(), nnparamfile+'.'+str(LR)+'.'+str(BATCH_SIZE)+'.'+str(epoch_id))
         epoch_id += 1
 
 #   end of training
-    torch.save(net, nnfile+'.'+str(LR)+'.'+str(BATCH_SIZE))
-    torch.save(net.state_dict(), nnparamfile+'.'+str(LR)+'.'+str(BATCH_SIZE))
     log_train.close()
     log_valid.close()
     return net

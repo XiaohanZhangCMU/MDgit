@@ -79,11 +79,11 @@ class MD(data.Dataset):
                     dps_validation = 0
                     for i in range(int(train_start*n_dps), int(train_end*n_dps)):
                         self.train_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
-#                        self.train_labels.append(self.labels_1[key])
-                        labels_2 = 0
-                        if np.abs(dps[i*(n_features+4)+2])>tol:
-                            labels_2 = 1
-                        self.train_labels.append(labels_2)
+                        self.train_labels.append(self.labels_1[key])
+#                        labels_2 = 0
+#                        if np.abs(dps[i*(n_features+4)+2])>tol:
+#                            labels_2 = 1
+#                        self.train_labels.append(labels_2)
                         dps_validation += dps[i*(n_features+4)+3]
                     assert(dps_validation == n_data_points * n_features), "Number of features do not add up!"
             self.train_data = np.concatenate(self.train_data)
@@ -114,11 +114,11 @@ class MD(data.Dataset):
                     dps_validation = 0
                     for i in range(int(test_start*n_dps), int(test_end*n_dps)):
                         self.test_data.append(np.pad(dps[i*(n_features+4)+4:i*(n_features+4)+4+n_features], (0,self.n_base_features-n_features),'constant', constant_values=(0 )))  
-#                        self.test_labels.append(self.labels_1[key])
-                        labels_2 = 0
-                        if np.abs(dps[i*(n_features+4)+2])>tol:
-                            labels_2 = 1
-                        self.test_labels.append(labels_2)
+                        self.test_labels.append(self.labels_1[key])
+#                        labels_2 = 0
+#                        if np.abs(dps[i*(n_features+4)+2])>tol:
+#                            labels_2 = 1
+#                        self.test_labels.append(labels_2)
                         dps_validation += dps[i*(n_features+4)+3]
                     assert(dps_validation == n_data_points * n_features), "Number of features do not add up! {0} vs {1}".format(dps_validation, n_data_points * n_features)
             self.test_data = np.concatenate(self.test_data)

@@ -376,7 +376,8 @@ if { $status == 0 } {
     MD++ y_eigen_zbound_max =  0
 
     set initNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-0.cn
-    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+#    set finalNEBfile ../fem-0-$pbid-$meshid-$eqnType/NEBinit-1.cn 
+    set finalNEBfile ../fem-view-23-$pbid-$meshid-$eqnType/chain_no_23.cn 
 
     MD++ incnfile = $initNEBfile readcn saveH
     #setup_window
@@ -387,6 +388,7 @@ if { $status == 0 } {
 
 
     MD++ incnfile = $initNEBfile readcn setconfig1
+    MD++ eval sleep
     MD++ fixallatoms  constrain_fixedatoms freeallatoms
     if { $USEGPU == 1 } {
       MD++ cuda_memcpy_all
@@ -1015,17 +1017,28 @@ if { $status == 0 } {
     MD++ sleep
     exitmd
   }
-  setup_window
-  openwindow
+#  setup_window
+#  openwindow
+#  MD++ incnfile = "chain_23.cn" readcn
+#  MD++ plot sleep 
 
   set total_no 48
   MD++ zipfiles = 0
   for { set iter 0 } { $iter <= $total_no } { incr iter 1 } {
-    MD++ incnfile ="../fem-1-$pbid-$meshid-$eqnType/neb.chain.5000" readRchain
+    MD++ incnfile ="../snap_saved/fem-10-$pbid-$meshid-$eqnType/neb.chain.5000" readRchain
     set chain_no $iter
-    MD++ input = $iter  copyRchaintoCN eval
-#    MD++ SHtoR
-#    MD++ relax
+    MD++ input = $iter  copyRchaintoCN SHtoR eval
+    if { $iter == 230 } { 
+      MD++ SHtoR
+
+      if { $USEGPU == 1 } {
+        MD++ cuda_memcpy_all
+      } 
+
+      MD++ conj_ftol = 5e-1 conj_itmax = 1000 conj_fevalmax = 130000
+      MD++ relax
+      MD++ finalcnfile = "chain_23.cn" writecn
+    }
     MD++ eval plot 
     MD++ finalcnfile = "chain_no_${chain_no}.cn"  writecn
     MD++ finalcnfile = "chain_no_${chain_no}.cfg" writeatomeyecfg

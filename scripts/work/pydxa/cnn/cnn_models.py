@@ -20,7 +20,7 @@ class CNN(nn.Module):
             nn.BatchNorm2d(128),        
             nn.ReLU(),
             nn.Conv2d(128,128,3,1,1),
-            nn.Dropout2d(p=0.2),
+            nn.Dropout2d(p=0.4),
             nn.BatchNorm2d(128),        
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),                
@@ -33,26 +33,26 @@ class CNN(nn.Module):
                         nn.BatchNorm2d(256),
                         nn.ReLU(),
                         nn.Conv2d(256, 256, 3, 1, 1),
-                        nn.Dropout2d(p=0.2),
+                        nn.Dropout2d(p=0.4),
                         nn.BatchNorm2d(256),
                         nn.ReLU(),
                         nn.MaxPool2d(2),
                         )     
 
-        self.module_3 = nn.Sequential(
-            nn.Conv2d(256, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),        
-            nn.ReLU(),
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),        
-            nn.ReLU(),
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.Dropout2d(p = 0.2),
-            nn.BatchNorm2d(512),        
-            nn.ReLU(),
-            nn.MaxPool2d(2),                                
-        )
-
+#        self.module_3 = nn.Sequential(
+#            nn.Conv2d(256, 512, 3, 1, 1),
+#            nn.BatchNorm2d(512),        
+#            nn.ReLU(),
+#            nn.Conv2d(512, 512, 3, 1, 1),
+#            nn.BatchNorm2d(512),        
+#            nn.ReLU(),
+#            nn.Conv2d(512, 512, 3, 1, 1),
+#            nn.Dropout2d(p = 0.4),
+#            nn.BatchNorm2d(512),        
+#            nn.ReLU(),
+#            nn.MaxPool2d(2),                                
+#        )
+#
 #        self.module_4 = nn.Sequential(
 #            nn.Conv2d(512, 1024, 3, 1, 1),
 #            nn.BatchNorm2d(1024),        
@@ -61,7 +61,7 @@ class CNN(nn.Module):
 #            nn.BatchNorm2d(1024),        
 #            nn.ReLU(),
 #            nn.Conv2d(1024, 1024, 3, 1, 1),
-#            nn.Dropout2d(p = 0.1),
+#            nn.Dropout2d(p = 0.4),
 #            nn.BatchNorm2d(1024),        
 #            nn.ReLU(),
 #            nn.MaxPool2d(2),                                
@@ -80,13 +80,13 @@ class CNN(nn.Module):
         #    nn.ReLU(),
         #    nn.MaxPool2d(2),                                
         #)
-        self.out = nn.Linear(512, 2)
+        self.out = nn.Linear(256, 2)
 
     def forward(self, x):
         x = self.module_1(x)
         x = self.module_2(x)
-        x = self.module_3(x)
-#       x = self.module_4(x)
+#        x = self.module_3(x)
+#        x = self.module_4(x)
 #       x = self.module_5(x)
 
         x = x.view(x.size(0), x.size(1), -1)
@@ -99,6 +99,5 @@ class CNN(nn.Module):
         return output
     
     torch.Size([2, 512])
-
 
 
