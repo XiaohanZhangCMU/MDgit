@@ -1,5 +1,5 @@
 #!/bin/bash
-source activate py2
+export PATH="/home/xzhang11/miniconda2/bin:$PATH"
 scriptdir=/home/xzhang11/Planet/Libs/MD++.git/scripts/work/pydxa/ge/
 dirname=/home/xzhang11/Planet/Libs/MD++.git/runs/pydxa/ge/
 echo $dirname

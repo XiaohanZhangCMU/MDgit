@@ -22,8 +22,10 @@ cd $PBS_O_WORKDIR
 echo $PWD
 
 #300 :020 : 600
-mpirun -np $ncpu sw_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.0520 001 1
+#sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 0 0 001 1
 
+mpirun -np $ncpu sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.0560 001 1
+#mpirun -np $ncpu sw_mc2_mpich scripts/disl_nuc_hetero.tcl 0 0 001 1
 #mpirun -np $ncpu sw_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.030 001 1 
 #mpirun -np $ncpu sw_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.034 001 1
 

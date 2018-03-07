@@ -1,11 +1,11 @@
 # -*-shell-script-*-
-# compute energy barrier of homogeneous dislocation nucleation in BCC W
-# relax all other stress components (except yz) to zero
+# compute energy barrier of shuffle-glide dislocation nucleation from silicon (001) surface with a pit
 #
-# make fs build=R SYS=mc2
-# sw_mc2_mpich scripts/disl_nuc_hetero.tcl 0 0 001 1     -generates 0.01 0.02 0.03 strain perfect states A
-# sw_mc2_mpich scripts/disl_nuc_hetero.tcl 1 0.030 001 1 -generates 0.03 state B.
-# mpirun -np $ncpu sw_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.030 001 1 ----string_relax_parallel
+# make sworig build=R SYS=mc2
+# sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 0 0 001 1     -generates strained perfect thin film --> state A.
+# sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 1 0.030 001 1 -generates shuffle glide dislcoaiton -->  state B.
+# mpirun -np $ncpu sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 4 0.030 001 1 ----string_relax_parallel.
+# sworig_mc2_mpich scripts/disl_nuc_hetero.tcl 20 0.030 001 1 ---- visualize relaxed chain.
 source "$::env(MDPLUS_DIR)/scripts/Examples/Tcl/startup.tcl"
 
 #*******************************************
@@ -15,9 +15,10 @@ proc initmd { n } {
 #MD++ setnolog
 MD++ setoverwrite
 #relative to the  directory of lauching 
-MD++ dirname = runs/he-si-tf-pit-neb/he-si-tf-pit-special/w-disl-nuc-hetero-$n
+MD++ dirname = runs/he-si-tf-pit-neb/he-si-tf-pit-special-3-sworig
 #max number neigbors
 MD++ NNM = 200
+MD++ nspecies = 1  element0 = "Siz"
 }
 
 proc readpot { } { MD++ {
@@ -36,39 +37,26 @@ proc make_perfect_crystal { nx ny nz } {
 }
 
 
-#xhole = 5.6/latticeconst = 10.
-#scale_xhole = 5.6/23 = 0.2434
-#zhole = 5.7/latticeconst = 0.25
-#lx = 23/latticeconst = 42.3
-#ly = 11.5/latticeconst = 21.1
-#lz = 22.8/latticeconst = 42
-
-proc make_shuffle_dislocation_loop { flag epsilon } { 
+#make a partial dislocation on one shuffle plane
+proc make_glide_dislocation_loop_1 { flag epsilon } { 
     set store 1
-
-    # xiaohan
-    # create structure B'
-    # 1) perfect dislocation on shuffle plane {001}
-    #    b = a/2[110]
-    # 2) partial dislocation on glide plane, {001}
-    #    b = a/2[011], b1=a/6[121], b2= a/6[-1,11]
-    # H11 gives dimension in xx
     set nu 0.28
     set a 5.4309529817532409
 
-    set bx  [expr 0.5/sqrt(2)]
-    set by  [expr 0.5/sqrt(2)]
-    set bz  [expr 0.5 ] 
 
-#     set bx  0.5
-#     set by  0.5
-#     set bz  -0.7072
+    #set bx  [expr 1.0* sqrt(2.0) /12.0 ]
+    #set by  [expr 1.0* sqrt(2.0) / 4.0 ]
+    #set bz  [expr 1.0/6.0 ]
+
+     set bx [ expr 1.0*sqrt(2)/6.0 ] 
+     set by [ expr 0 ] 
+     set bz [ expr 1.0/3.0]
 
     set Lx [MD++_Get H_11]
     set Ly [MD++_Get H_22]
     set Lz [MD++_Get H_33]
 
-    set espratio [expr 1 ]
+    set espratio [expr 0.7 ]
     if { $flag == 001 } {
        #first generate the perfect lattice and visualize with ovito
        #pick one atoms above slip plane, one below. both on top face
@@ -100,11 +88,12 @@ proc make_shuffle_dislocation_loop { flag epsilon } {
        } elseif { $epsilon == 0.0800 } {
                set w [expr $Ly * 0.479 ]
        } else {
-              set w [expr $Ly * 0.419]
+              set w [expr $Ly * 0.486 ]
        }
 
-       set w [expr $w * 0.4]
+       set w [expr $w * 0.65 ]
        set h [expr $w * $espratio]
+#       set w [expr $w * 40]
        set angle 0.9553
 
 #       set RDy  0
@@ -113,9 +102,11 @@ proc make_shuffle_dislocation_loop { flag epsilon } {
        set RDz -1
 
        #calculate the middle point of the loop, which should sit on the shuffle/glide plane
-       set P0y [expr  0.0  ]
-       set P0x [expr  0.5*(0.3133+0.3331) * $Lx]
-       set P0z [expr  0.5*(0.1901+0.1791) * $Lz ]
+
+
+       set P0y [expr  0.0 * $Ly ]
+       set P0x [expr  0.5*(0.2711+0.2921) * $Lx]
+       set P0z [expr  0.5*(0.2615+0.2529) * $Lz ]
        
        set P1y $P0y
        set P1x [expr $P0x + $RDx * $h]
@@ -172,7 +163,9 @@ proc make_shuffle_dislocation_loop { flag epsilon } {
 
 
 
-proc make_glide_dislocation_loop { flag epsilon } { 
+
+#make another partial dislocation on one shuffle plane
+proc make_glide_dislocation_loop_2 { flag epsilon } { 
     set store 1
 
     # xiaohan
@@ -186,19 +179,19 @@ proc make_glide_dislocation_loop { flag epsilon } {
     set a 5.4309529817532409
 
 
-    set bx  [expr 1.0* sqrt(2.0) /12.0 ]
-    set by  [expr 1.0* sqrt(2.0) / 4.0 ]
-    set bz  [expr 1.0/6.0 ]
+    #set bx  [expr 1.0* sqrt(2.0) /12.0 ]
+    #set by  [expr 1.0* sqrt(2.0) / 4.0 ]
+    #set bz  [expr 1.0/6.0 ]
 
-#     set bx  0.5
-#     set by  0.5
-#     set bz  -0.7072
+     set bx [ expr 1.0*sqrt(2)/6.0 ] 
+     set by [ expr 0 ] 
+     set bz [ expr 1.0/3.0]
 
     set Lx [MD++_Get H_11]
     set Ly [MD++_Get H_22]
     set Lz [MD++_Get H_33]
 
-    set espratio [expr 1 ]
+    set espratio [expr 0.7 ]
     if { $flag == 001 } {
        #first generate the perfect lattice and visualize with ovito
        #pick one atoms above slip plane, one below. both on top face
@@ -230,11 +223,12 @@ proc make_glide_dislocation_loop { flag epsilon } {
        } elseif { $epsilon == 0.0800 } {
                set w [expr $Ly * 0.479 ]
        } else {
-              set w [expr $Ly * 0.419]
+              set w [expr $Ly * 0.486 ]
        }
 
-       set w [expr $w * 0.4]
+       set w [expr $w * 0.65 ]
        set h [expr $w * $espratio]
+ #      set w [expr $w * 40]
        set angle 0.9553
 
 #       set RDy  0
@@ -243,9 +237,11 @@ proc make_glide_dislocation_loop { flag epsilon } {
        set RDz -1
 
        #calculate the middle point of the loop, which should sit on the shuffle/glide plane
-       set P0y [expr  0.0  ]
-       set P0x [expr  0.5*(0.3141+0.3133) * $Lx]
-       set P0z [expr  0.5*(0.1996+0.1901) * $Lz ]
+
+
+       set P0y [expr  0.0* $Ly  ]
+       set P0x [expr  0.5*(0.2507+0.2717) * $Lx]
+       set P0z [expr  0.5*(0.2752+0.2686) * $Lz ]
        
        set P1y $P0y
        set P1x [expr $P0x + $RDx * $h]
@@ -297,6 +293,142 @@ proc make_glide_dislocation_loop { flag epsilon } {
     MD++ input = \[ 1 $store $nu $a $bx $by $bz 4 $x1 $y1 $z1 $x2 $y2 $z2 $x3 $y3 $z3 $x4 $y4 $z4 \] 
     MD++ makedislpolygon
 }
+
+
+
+#make the middle row of atoms between the two shuffle plane to rotate.
+proc make_glide_dislocation_loop_3 { flag epsilon } { 
+    set store 1
+
+    # xiaohan
+    # create structure B'
+    # 1) perfect dislocation on shuffle plane {001}
+    #    b = a/2[110]
+    # 2) partial dislocation on glide plane, {001}
+    #    b = a/2[011], b1=a/6[121], b2= a/6[-1,11]
+    # H11 gives dimension in xx
+    set nu 0.28
+    set a 5.4309529817532409
+
+
+    #set bx  [expr 1.0* sqrt(2.0) /12.0 ]
+    #set by  [expr 1.0* sqrt(2.0) / 4.0 ]
+    #set bz  [expr 1.0/6.0 ]
+
+     set fac 0.1
+     set bx [ expr sqrt(2) * $fac ] 
+     set by [ expr 0 ] 
+     set bz [ expr -1.0 * $fac]
+
+    set Lx [MD++_Get H_11]
+    set Ly [MD++_Get H_22]
+    set Lz [MD++_Get H_33]
+
+    set espratio [expr 0.7 ]
+    if { $flag == 001 } {
+       #first generate the perfect lattice and visualize with ovito
+       #pick one atoms above slip plane, one below. both on top face
+       #put their real cooardinate here, 
+
+
+       if { $epsilon <= 0.030 } {
+	       set w [expr $Ly * 0.495]
+       } elseif { $epsilon == 0.0500 } {
+	       set w [expr $Ly * 0.486]
+       } elseif { $epsilon == 0.0520 } {
+	       set w [expr $Ly * 0.486]
+       } elseif { $epsilon == 0.0540 } {
+	       set w [expr $Ly * 0.486]
+       } elseif { $epsilon == 0.0560 } {
+               set w [expr $Ly * 0.485 ] 
+       } elseif { $epsilon == 0.0580 } {
+               set w [expr $Ly * 0.483 ] 
+       } elseif { $epsilon == 0.0600 } {
+               set w [expr $Ly * 0.482 ]
+       } elseif { $epsilon == 0.0620 } {
+              set w [expr $Ly * 0.481 ] 
+       } elseif { $epsilon == 0.0630 } {
+              set w [expr $Ly * 0.480 ] 
+       } elseif { $epsilon == 0.0640 } {
+              set w [expr $Ly * 0.479 ] 
+       } elseif { $epsilon == 0.0700 } {
+               set w [expr $Ly * 0.481 ]
+       } elseif { $epsilon == 0.0800 } {
+               set w [expr $Ly * 0.479 ]
+       } else {
+              set w [expr $Ly * 0.486 ]
+       }
+
+       set w [expr $w * 0.65 ]
+       set h [expr $w * $espratio]
+   #    set w [expr $w * 40]
+       set angle 0.9553
+
+#       set RDy  0
+#       set RDx  0.7072
+       set RDx -0.70749
+       set RDz -1
+
+       #calculate the middle point of the loop, which should sit on the shuffle/glide plane
+
+
+       set P0y [expr  0.0*$Ly  ]
+       set P0x [expr  0.25*( 0.2507 + 0.2717 + 0.2711 + 0.2921 ) * $Lx]
+       set P0z [expr  0.25*( 0.2752 + 0.2686 + 0.2615 + 0.2529 ) * $Lz ]
+       
+       set P1y $P0y
+       set P1x [expr $P0x + $RDx * $h]
+       set P1z [expr $P0z + $RDz * $h]
+       
+       set y1 [expr $P0y - $w]
+       set x1 [expr $P0x ]
+       set z1 [expr $P0z ]
+
+       set y2 [expr $P0y + $w]
+       set x2 [expr $P0x ]
+       set z2 [expr $P0z ]
+
+       set y3 [expr $P1y + 0.55*$w]
+       set x3 [expr $P1x ]
+       set z3 [expr $P1z ]
+
+       set y4 [expr $P1y - 0.55*$w]
+       set x4 [expr $P1x ]
+       set z4 [expr $P1z ]
+    } else {
+       puts "unknown flag = $flag, must be 001 or 110"
+       return
+    } 
+
+    puts "x1 = $x1"
+    puts "y1 = $y1"
+    puts "z1 = $z1"
+
+    puts "x2 = $x2"
+    puts "y2 = $y2"
+    puts "z2 = $z2"
+
+    puts "x3 = $x3"
+    puts "y3 = $y3"
+    puts "z3 = $z3"
+
+    puts "x4 = $x4"
+    puts "y4 = $y4"
+    puts "z4 = $z4"
+
+    puts "w = $w"
+    puts "h = $h"
+
+    puts "Lx = $Lx"
+    puts "Ly = $Ly"
+    puts "Lz = $Lz"
+    
+    MD++ input = \[ 1 $store $nu $a $bx $by $bz 4 $x1 $y1 $z1 $x2 $y2 $z2 $x3 $y3 $z3 $x4 $y4 $z4 \] 
+    MD++ makedislpolygon
+}
+
+
+
 
 #--------------------------------------------
 proc relax_fixbox { } { MD++ {
@@ -355,8 +487,7 @@ plot_color_windows = [ 0
                        0  0.6  4
                      ]
 
-#plot_limits = [ 1 -10 10 -0.2 0.2 0 10 ]
-
+#plot_limits = [ 1 -10 10 -0.25 0.25 0.05 10 ]
 
 
 #
@@ -458,7 +589,7 @@ if { $status == 0 } {
   readpot
 
 #  make_perfect_crystal 30 15 42
-  make_perfect_crystal 12 12 21
+  make_perfect_crystal 12 12  21
 
   MD++ finalcnfile = "w-perf.cn" writecn
   MD++ finalcnfile = "w-perf.cfg" writeatomeyecfg
@@ -468,8 +599,8 @@ if { $status == 0 } {
   MD++ relax finalcnfile = "0K_perfect.cn" writecn
 
   MD++ eval
-  setup_window
-  openwindow
+# setup_window
+# openwindow
 
   
   set dighole 0
@@ -491,7 +622,7 @@ if { $status == 0 } {
 
 #MD++ conj_ftol = 2e-6 conj_itmax = 1000 conj_fevalmax = 2
 
-       MD++ input = \[ 3 3 0.2 \] changeH_keepR relax  relax finalcnfile = "0K_surf${flag}.cn" writecn
+       MD++ input = \[ 3 3 0.6 \] changeH_keepR relax  relax finalcnfile = "0K_surf${flag}.cn" writecn
        set strain_data_file "strain_surf_001.dat"
        set stress_data_file "stress_surf_001.dat"
        MD++ { conj_fixboxvec = [ 0 1 1
@@ -504,11 +635,11 @@ if { $status == 0 } {
 
 
 set NP [ MD++_Get "NP" ]
-set xholemin [ expr -0.5 + 0.15 ]
-set yholemin [ expr -0.5 + 0.15 ]
-set xholemax [ expr 0.5 - 0.15 ]
-set yholemax [ expr 0.5 - 0.15 ]
-set zholemax [ expr 0.5*5/6 - 0.2 ]
+set xholemin [ expr -0.5 + 0.2083 ]
+set yholemin [ expr -0.5 + 0.2083 ]
+set xholemax [ expr 0.5 - 0.2083 ]
+set yholemax [ expr 0.5 - 0.2083 ]
+set zholemax [ expr 0.5*5.0/6.0 - 0.14 ]
 
 for { set ip 0 } { $ip < $NP } { incr ip 1 } {
      set sxi [ MD++_GetVector SR $ip x ] 
@@ -522,9 +653,15 @@ for { set ip 0 } { $ip < $NP } { incr ip 1 } {
 MD++ removefixedatoms
 MD++ freeallatoms
 
+MD++ plot
+#MD++ sleep 
+
 #  move top and bot layer atoms to form dimers
 #  Top layer
-#  0.2440 -- 0.2381
+
+#0.403 -0.416
+
+
 set zholemin_tol [expr $zholemax-0.02]
 set zholemax_tol [expr $zholemax+0.02]
 if { $surface_reconstruct } {
@@ -532,8 +669,8 @@ if { $surface_reconstruct } {
  for { set i 0 } { $i < $ny } { incr i 1 } {
     set ymin [ expr -0.5006+1.0/$ny*$i ]
     set ymax [ expr -0.5006+1.0/$ny*($i+0.5) ]
-    MD++ input = \[ 1 -10 10 $ymin $ymax 0.403   10 \]  fixatoms_by_position
-    MD++ input = \[ 1 -10 10 $ymin $ymax  -10  -0.416 \]  fixatoms_by_position
+    MD++ input = \[ 1 -10 10 $ymin $ymax 0.3025   10 \]  fixatoms_by_position
+    MD++ input = \[ 1 -10 10 $ymin $ymax  -10  -0.310 \]  fixatoms_by_position
     MD++ input = \[ 1 -10 10 $ymin $ymax  $zholemin_tol  $zholemax_tol \]  fixatoms_by_position
  }
  MD++ input = 1  setfixedatomsgroup  freeallatoms
@@ -541,8 +678,8 @@ if { $surface_reconstruct } {
  for { set i 0 } { $i < $ny } { incr i 1 } {
     set ymin [ expr -0.5006+1.0/$ny*($i+0.5) ]
     set ymax [ expr -0.5006+1.0/$ny*($i+1) ]
-    MD++ input = \[ 1 -10 10 $ymin $ymax 0.403   10 \]  fixatoms_by_position
-    MD++ input = \[ 1 -10 10 $ymin $ymax -10 -0.416 \]  fixatoms_by_position
+    MD++ input = \[ 1 -10 10 $ymin $ymax 0.3025   10 \]  fixatoms_by_position
+    MD++ input = \[ 1 -10 10 $ymin $ymax -10 -0.310 \]  fixatoms_by_position
     MD++ input = \[ 1 -10 10 $ymin $ymax $zholemin_tol $zholemax_tol \]  fixatoms_by_position
  }
  MD++ input = 2  setfixedatomsgroup  freeallatoms
@@ -562,7 +699,7 @@ if { $surface_reconstruct } {
   set C44 160000
   set factor 0.7
 
-  set maxitereps 200
+  set maxitereps 60
   set maxiter    100
   for { set itereps 0 } { $itereps <= $maxitereps } { incr itereps 1 } {
 
@@ -669,8 +806,6 @@ if { $surface_reconstruct } {
 
      relax_fixbox
 
-     MD++ sleep 
-
      MD++ finalcnfile = "0K_${epsilon}_relaxed_surf${flag}.cn" writecn
      MD++ finalcnfile = "0K_${epsilon}_relaxed_surf${flag}.cfg" writeatomeyecfg
 
@@ -741,17 +876,22 @@ if { $surface_reconstruct } {
 
   setup_window
   openwindow
-  MD++ sleep 
+# MD++ sleep 
+#  make_shuffle_dislocation_loop $flag $epsilon
+  make_glide_dislocation_loop_1 $flag $epsilon
+  make_glide_dislocation_loop_2 $flag $epsilon
+  make_glide_dislocation_loop_3 $flag $epsilon
 
-  make_shuffle_dislocation_loop $flag $epsilon
-  make_glide_dislocation_loop $flag $epsilon
 
   MD++ incnfile = "../w-disl-nuc-hetero-0/0K_${epsilon}_relaxed_surf${flag}.cn" readcn
   MD++ commit_storedr
-  
+   
   MD++ finalcnfile = "w-loop-init.cn" writecn
   MD++ finalcnfile = "w-loop-init.cfg" writeatomeyecfg
 
+  MD++ eval plot
+
+#  MD++ sleep 
 
 
 #  MD++ eval plot 
@@ -772,20 +912,19 @@ if { $surface_reconstruct } {
 
 
   # this is to confirm the structure is beyond critical
-  MD++ conj_ftol = 1e-4 conj_itmax = 3800 conj_fevalmax = 20
+  MD++ conj_ftol = 1e-4 conj_itmax = 3800 conj_fevalmax = 50
 
   MD++ conj_fixbox = 1  relax
 
 #  MD++ conj_ftol = 1e-5 conj_itmax = 3800 conj_fevalmax = 30
 #  MD++ conj_fixbox = 1 relax
 
-#  MD++ sleep
   MD++ finalcnfile = "w-loop-compression-surf${flag}-eps${epsilon}.cn"  writecn
   MD++ finalcnfile = "w-loop-compression-surf${flag}-eps${epsilon}.cfg" writeatomeyecfg
 
   MD++ eval plot
 
-#  MD++ sleep
+  MD++ sleep
   exitmd
   
 } elseif { $status == 2 } {
@@ -949,7 +1088,7 @@ puts " I am here 4"
     MD++ { nebspec = [ 0 1 0 1 0 1 ] totalsteps = 1000 equilsteps = 2000 }
    }
   } else {
-    MD++ nebspec = \[ 0 1 0 1 0 0 1 \] totalsteps = 100000 equilsteps = 100000
+    MD++ nebspec = \[ 0 1 0 1 0 0 1 \] totalsteps = 100000 equilsteps = 10000
   }   
 
   MD++ Broadcast_FS_Param
@@ -969,7 +1108,7 @@ puts " I am here 4"
   if { 0 } {
   exec cp stringeng.out stringeng_step1.out
 
-  MD++ nebspec = \[ 0 1 0 1 0 1 \] totalsteps = 100000 equilsteps = 100000
+  MD++ nebspec = \[ 0 1 0 1 0 1 \] totalsteps = 20000 equilsteps = 100000
   MD++ Broadcast_nebsetting
   MD++ stringrelax_parallel_1
   #we adopt William's revised formulation
@@ -1107,6 +1246,40 @@ puts " I am here 4"
   MD++ sleepseconds = 100  sleep
   exitmd
 
+  # This is to adjust Ec[0] for a relaxed path
+} elseif { $status == 23 } { 
+
+  set ncpu 24
+  #MD++ setnolog
+  initmd $flag-$n.$ncpu
+#  readpot
+
+  set epsilon $n
+  set chain_no 0
+  set total_no 23
+  MD++ chainlength = $total_no
+
+  set fp [ open "EPOT.dat" a+ ]
+
+  MD++ incnfile = "../w-disl-nuc-hetero-0/0K_${epsilon}_relaxed_surf${flag}.cn" readcn 
+  MD++ eval
+  set EPOT_StateA [ MD++_Get EPOT ]
+  puts $fp [ MD++_Get EPOT ]
+  puts "EPOT_StateA = $EPOT_StateA"
+  #set chainfile "../w-disl-nuc-hetero-${flag}-${epsilon}.$ncpu.saved/stringrelax.chain.cn" 
+  set chainfile "../w-disl-nuc-hetero-${flag}-${epsilon}.$ncpu/stringrelax.chain.cn" 
+  MD++ incnfile = $chainfile
+  for { set iter 0 } { $iter <= $total_no } { incr iter 1 } {
+     set chain_no $iter
+     MD++ input = $chain_no  readRchain_parallel_toCN  RHtoS
+     MD++ eval
+     set EPOT_Chain0 [ MD++_Get EPOT ]
+     puts "EPOT_Chain0 = $EPOT_Chain0"
+     puts $fp [ MD++_Get EPOT ]
+     break
+  }
+  puts $fp [expr $EPOT_StateA - $EPOT_Chain0 ]
+  close $fp
 } elseif { $status == 21 } {
   MD++ incnfile = "runs/w-disl-nuc-hetero-0/w-loop-compression-surf001-eps0.0600.cn" readcn 
   MD++ finalcnfile = "final.cfg" writeatomeyecfg

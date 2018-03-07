@@ -37,6 +37,7 @@ datafilename = dirname + '/data'
 for snap in range(0,1+observationstep):
     print("processing snap {0}".format(snap))
     dumpfile=dirname + "/ge_0_"+str(snap)+".lammps.gz"
+    cnfile=dirname + "/ge_0_"+str(snap)+".cn"
     print(dumpfile)
     snap_str = "{0:0>4}".format(snap)    
 
@@ -65,10 +66,13 @@ for snap in range(0,1+observationstep):
     # Print list of dislocation lines:
     network = node.output.dislocations
     print("Found %i dislocation segments" % len(network.segments))
-    coord = data.particle_properties.position.array
-    Na = coord.shape[0]
+    if 0: #real coordinates
+        coord = data.particle_properties.position.array
+    else: #scaled coordinates
+        coord = np.genfromtxt(cnfile,skip_header=1,skip_footer=5)
 
-    bigvector = np.concatenate((bigvector, [label_crystal],[label_dislocation], [total_line_length], [Na*3], coord[:,0], coord[:,1], coord[:,2]), axis=0) 
+    Na = coord.shape[0]
+    bigvector = np.concatenate((bigvector, [label_crystal],[label_dislocation], [dislocation_density], [Na*3], coord[:,0], coord[:,1], coord[:,2]), axis=0) 
 
 
     if ( len(network.segments) != 0):

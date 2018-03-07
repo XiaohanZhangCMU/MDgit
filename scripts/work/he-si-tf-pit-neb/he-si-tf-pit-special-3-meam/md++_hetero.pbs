@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -N special-3-meam
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=99:00:00
+#PBS -V
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+
+ncpu=`cat $PBS_NODEFILE | wc -w`
+echo "Number of processors = $ncpu "
+### end of information preamble
+
+cd $PBS_O_WORKDIR
+
+echo $PWD
+
+bin1/meam-lammps_mc2_mpich  scripts/work/he-si-tf-pit-neb/he-si-tf-pit-special-3-meam/disl_nuc_hetero.tcl 0 0 001 1 
+#mpirun -np $ncpu /home/xzhang11/Planet/Libs/MD++.svn6/bin/meam-lammps_mc2_mpich scripts/disl_nuc_hetero.tcl 44 0.0520 001 1
+wait
+#wipe $PBS_NODEFILE
+

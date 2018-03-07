@@ -11,7 +11,7 @@ d_void_epot = 4.044
 tmp = load(strcat('../../../runs/frankMEP/nucleus-', num2str(0),'.dat'));
 numvoids_0 = size(tmp,1);  
 
-for i = 1 : length(EPOT_2)-1
+for i = 1 : length(EPOT_2)-2
   tmp = load(strcat('../../../runs/frankMEP/nucleus-', num2str(i-1),'.dat'));
   numvoids = size(tmp,1);  
   NumVoids(i) = numvoids;

@@ -13,3 +13,6 @@ runs
 fem_modload.sh
 *.dat
 .svn
+*.a
+*.mod
+*.pbs

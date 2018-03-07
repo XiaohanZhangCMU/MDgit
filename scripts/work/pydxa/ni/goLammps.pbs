@@ -5,7 +5,7 @@
 
 # Name of my queue
 # Requesting resources from PBS ( 4 node, 8 procs on each)
-#PBS -l nodes=6:ppn=24,walltime=196:00:00
+#PBS -l nodes=1:ppn=24,walltime=196:00:00
 #PBS -j oe
 
 echo The master node of this job is `hostname`
@@ -23,7 +23,6 @@ cd $PBS_O_WORKDIR
 
 sleep 1
 
-mpirun -np $ncpu /home/xzhang11/Planet/Codes/lammps-30Jul16/src/lmp_mpi < input.meam
-#mpirun -np $ncpu /home/xzhang11/Planet/Codes/lammps-30Jul16/src/lmp_mpi < input.sw
+./auto_bms.sh 
 
 wait
