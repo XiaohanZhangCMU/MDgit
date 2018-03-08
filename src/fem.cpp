@@ -1372,7 +1372,7 @@ void FEMFrame::Broadcast_FEM_Param()
   return;
 }
 
-
+#endif//_PARALLEL
 
 #ifdef _TEST
 
