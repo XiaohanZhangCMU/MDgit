@@ -31,7 +31,7 @@ def main(sys):
     #net = torch.load('cnn.pkl.0.1.128.25')
     net = cnn_models.CNN( )
     net = torch.nn.DataParallel(net, device_ids=[0])
-    net.load_state_dict(torch.load('cnn.pkl.params.0.1.128.150'))
+    net.load_state_dict(torch.load('/scratch/users/xzhang11/cnn.pkl.params.0.1.128.150'))
 
     net.eval()
     test_loss = 0
