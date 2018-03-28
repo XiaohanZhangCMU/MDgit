@@ -11,12 +11,10 @@ from bitarray import bitarray
 
 '''
  About this script:
- 1) Require disl_nuc_hetero.tcl in the same folder.
-    all configurations are dumped to MD++ dirname folder.
+ 1) Require disl_nuc_hetero.tcl in the same folder. All configurations are dumped to MD++ dirname folder.
  2) status = 0  create free surface, surface reconstructed. applied strain.
     status = 1  read trenched configuration, relax with a little strain help
- 3) Select two points (x,z) in the reference configuration.
-    One on top surface one in the body. Both on (111) glide-set.
+ 3) Remove atoms between two neighboring glide set planes. Specify glide-set plane by selecting two points (x,z) in the reference configuration. One on top surface one in the body. Both on (111) glide-set such that their middle points lie on glide set.
  4) Check slice.cfg(cn) and init_trench.cn for correctness
 
  Some notations:
@@ -27,16 +25,31 @@ from bitarray import bitarray
    nbrlist: nbrlist for all atoms on the slice (totIdx)
 '''
 
-# icd: initial cluster dimension
-# make Nmax tries
 # dataset: a dictionary { bits : potential energy }
-global dirname, icdx, icdy, icdz, Nmax, dataset
+global dirname, icdx, icdy, icdz, dataset, generate_dataset;
 dirname = 'runs/frankMEP/'
-icdx = 0.42 #0.32
-icdy = 0.42 #0.32
-icdz = 0.42 #0.32
-Nmax = 100
+icdx =  0.5
+icdy =  0.5
+icdz =  0.5
 dataset = { }
+generate_dataset = 0
+
+# control points that slice will gow through. 
+# pt1_up/pt1_d----pt2_up/pt2_d  --> left glide plane
+# pt3_up/pt3_d----pt4_up/pt4_d  --> right glide plane
+# atoms between these two planes will be removed.
+# pt0 is on the middle shuffle plane
+global pt1, pt2, pt3, pt4, pt0;
+pt1d = np.array([0.0208,0, 0.3784]); pt1u = np.array([0.0208,0, 0.3911])
+pt2d = np.array([0.1042, 0, 0.2734]);  pt2u = np.array([0.1042, 0, 0.2865])
+
+pt3d = np.array([0.0625,0, 0.3773]); pt3u = np.array([0.0625,0, 0.3911])
+pt4d = np.array([0.1250, 0, 0.2995]);  pt4u = np.array([0.1250, 0, 0.3125])
+
+pt1 = 0.5*(pt1d + pt1u);  pt2 = 0.5*(pt2d + pt2u)
+pt3 = 0.5*(pt3d + pt3u);  pt4 = 0.5*(pt4d + pt4u)
+
+pt0 = 0.5*(pt1+pt3) ; 
 
 # Return atom Id within an ecllipse given _SR
 # pt1: center coordinate in _SR coordinate
@@ -96,15 +109,26 @@ def select_initial_nucleus(pt1, cfg, atomIdx, totIdx):
   # The intersection  set of yatomIdx and totIdx
   return np.intersect1d(yatomIdx, totIdx)
 
-def select_totalatoms_on_slice(eps, pt1, cfg, normal, d, atomIdx):
+def select_totalatoms_on_slice(eps, _pt, cfg, normal, atomIdx, opt):
   print(normal)
+  x0 = _pt[0]; y0 = _pt[1]; z0 = _pt[2];
+  d = normal[0] * x0 + normal[1] * y0 + normal[2] * z0;
   D = np.ones(cfg[:,0].shape) * d ; 
   cond = np.abs(normal[0] * cfg[:,0] + normal[1] * cfg[:,1]  + normal[2] * cfg[:,2] -D) < eps ;
   idx = np.extract(cond,atomIdx)
+
+  if opt != 0:
+    D = np.ones(cfg[idx,0].shape) * d ; 
+    if opt >0:
+      cond = normal[0] * cfg[idx,0] + normal[1] * cfg[idx,1]  + normal[2] * cfg[idx,2] -D > 0 ;
+    elif opt <0:
+      cond = normal[0] * cfg[idx,0] + normal[1] * cfg[idx,1]  + normal[2] * cfg[idx,2] -D < 0 ;
+    idx = np.extract(cond, idx)
+
   return idx
 
 
-def write_SR(data, finalcnfile):
+def write_rawdata(data, finalcnfile):
   with open(dirname+finalcnfile+".dat", 'w') as the_file:
     for i in range(data.shape[0]):
       for j in range(3):
@@ -124,7 +148,8 @@ def writecfg_fromdata(data, H, finalcnfile):
       the_file.write('\n') 
     the_file.write('1 Mo\n')
     the_file.write(' 0 0')
-  call([ "sw_mc2_mpich",  "scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl", "100", finalcnfile ])
+  call([ "sw_mc2_mpich",  "scripts/work/frankMEP/disl_nuc_hetero.tcl", "100", finalcnfile ])
+#  call([ "bin1/meam-lammps_mc2_mpich",  "scripts/work/frankMEP/disl_nuc_hetero.tcl", "100", finalcnfile ])
   
 def removeNucleusAtoms(cfg, nucleus, atomIdx):
   idx = np.setdiff1d(atomIdx, nucleus)
@@ -182,80 +207,104 @@ def set_bits_for_nucleus(nucleus, totIdx):
 
 '''                       
 status = 1
+
 if status == 0: 
-  call([ "sw_mc2_mpich",  "scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl", "0", "n", "001", "1" ])
+  call([ "sw_mc2_mpich",  "scripts/work/frankMEP/disl_nuc_hetero.tcl", "0", "n", "001", "1" ])
+  pt1d = np.array([0.0208,0, 0.3784]);   
+  pt1u = np.array([0.0208,0, 0.3911]);
+  pt2d = np.array([0.1042, 0, 0.2734]); 
+  pt2u = np.array([0.1042, 0, 0.2865]);
+
+  pt3d = np.array([0.0625,0, 0.3773]); pt3u = np.array([0.0625,0, 0.3911])
+  pt4d = np.array([0.1250, 0, 0.2995]);  pt4u = np.array([0.1250, 0, 0.3125])
+
+  pt1 = 0.5*(pt1d + pt1u);  pt2 = 0.5*(pt2d + pt2u)
+  pt3 = 0.5*(pt3d + pt3u);  pt4 = 0.5*(pt4d + pt4u)
+
+  print(pt1);
+  print(pt2);
+  print(pt3);
+  print(pt4);
   exit(0)
  
 elif status == 1:
+
   data=np.genfromtxt(dirname+"0K_0.0_relaxed_surf001.cn",skip_header=1,skip_footer=2);
   cfg  = data[:-3,:]
   H    = data[-3::,:]
   atomIdx = np.arange(cfg.shape[0])
 
-  pt1d = np.array([-0.0208,0, 0.3765]); pt1u = np.array([-0.0208,0, 0.3908])
-  pt2d = np.array([0.1250, 0, 0.1953]);  pt2u = np.array([0.1250, 0, 0.2083])
-  pt1 = 0.5*(pt1d + pt1u);  pt2 = 0.5*(pt2d + pt2u)
-  
   # Create a slice beneath free surface and dump to slice.cn(cfg)
   eps = 0.02
   v = pt2- pt1
   v = v/LA.norm(v)
   assert(np.abs(np.sqrt(v[0]*v[0]+v[1]*v[1] + v[2]*v[2])- LA.norm(v))<1e-10)
   normal = np.cross(v, [0,1,0])
-  x0 = pt1[0]; y0 = pt1[1]; z0 = pt1[2];
-  D = normal[0] * x0 + normal[1] * y0 + normal[2] * z0;
-  totIdx = select_totalatoms_on_slice(eps, pt1, cfg, normal, D, atomIdx)
-  writecfg_fromdata(cfg[totIdx,:], H, "slice")
-  write_SR(cfg[totIdx,:], "slice")
+
+  #opt>0, select atoms above the plane, vice versa
+  totIdx_1 = select_totalatoms_on_slice(eps, pt1, cfg, normal, atomIdx, 1)
+  totIdx_2 = select_totalatoms_on_slice(eps, pt3, cfg, normal, atomIdx, -1)
+  totIdx = np.union1d(totIdx_1, totIdx_2)
+
+  #writecfg_fromdata(cfg[totIdx,:], H, "slice")
+  #write_rawdata(cfg[totIdx,:], "slice")
+
 
   # Choose initial nucleus at the top free surface along x=0  
   # The safer way is to pick atom (x,z) from X-window
   #nucleus = select_initial_nucleus(pt1, cfg, atomIdx, totIdx)
-  a0 = 0.1; b0 = 0.1;
+  a0 = 0.02; b0 = a0;
+  max_radius = 0.75
+  Nmax = 20
   nucleus = select_atoms_within_ecllipse(pt1, a0, b0, normal, cfg, atomIdx, totIdx)   
 
-  print("I am here")
-  
   # Build neighborhood list for all atoms on the slice
   cutoff = 0.07
   maxnbrs = 40
   nbrlist = build_nbrlist(totIdx, cfg, maxnbrs, cutoff, False);
   
   # Check the following configurations to make sure the script is working correctly
-  init_trenched = removeNucleusAtoms(cfg, nucleus, atomIdx)
-  totl_trenched = removeNucleusAtoms(cfg, totIdx,  atomIdx)
-  writecfg_fromdata(init_trenched, H, "trench_init")
-  writecfg_fromdata(totl_trenched, H, "trench_tot")
-  
+  #init_trenched = removeNucleusAtoms(cfg, nucleus, atomIdx)
+  #totl_trenched = removeNucleusAtoms(cfg, totIdx,  atomIdx)
+  #writecfg_fromdata(init_trenched, H, "trench_init")
+  #writecfg_fromdata(totl_trenched, H, "trench_tot")
+
   # Randomly choose atoms beyond (but connecting to) initial nucleus. 
   # Generating a graph of atomistic states each denoted by missing atoms list
   
   for step in range(Nmax):
 
     # Write out trench and removed atoms (nucleus) positions
-    writecfg_fromdata(cfg[np.setdiff1d(totIdx,nucleus),:],H,"slice"+str(step))
+    # writecfg_fromdata(cfg[np.setdiff1d(totIdx,nucleus),:],H,"slice"+str(step))
     #np.setdiff1d(nucleus, atom_j)
     cfg_step = removeNucleusAtoms(cfg, nucleus, atomIdx)
     writecfg_fromdata(cfg_step, H, "trench_"+str(step))
-    write_SR(cfg[nucleus,:], "nucleus-"+str(step))
+    write_rawdata(cfg[nucleus,:], "nucleus-"+str(step))
+    #writecfg_fromdata(cfg[nucleus,:], H, "nucleus_"+str(step))
 
     # Read trench_$step.cn then relax the state with help of applied strain
     # Calculate potential energy of the final state write to file "trench_energy.dat" on line step
-    call([ "sw_mc2_mpich","scripts/work/MEP_frank_partial/disl_nuc_hetero.tcl","1",str(step),str(normal[0]), str(normal[1]), str(normal[2]), str(D), str(pt1[0]), str(pt1[1]), str(pt1[2]), str(icdx), str(icdy), str(icdz) ]);
+    x0 = pt0[0]; y0 = pt0[1]; z0 = pt0[2];
+    d = normal[0] * x0 + normal[1] * y0 + normal[2] * z0;
 
-    bits = set_bits_for_nucleus(nucleus, totIdx)
-    data = np.loadtxt(dirname+'EPOT_2.dat')
-    mybits=""
-    for k in bits:
-      mybits+=str(k)
-    dataset[mybits] = data[step]
-    print("----------------------------------------------------------size of dataset is {0}".format( len(dataset)) )
+    if not generate_dataset:
+      call([ "sw_mc2_mpich","scripts/work/frankMEP/disl_nuc_hetero.tcl","1",str(step),str(normal[0]), str(normal[1]), str(normal[2]), str(d), str(pt0[0]), str(pt0[1]), str(pt0[2]), str(icdx), str(icdy), str(icdz) ]);
+      print( "calling: sw_mc2_mpich","scripts/work/frankMEP/disl_nuc_hetero.tcl"+" 1 "+" "+str(step)+" "+str(normal[0])+" "+ str(normal[1])+" "+ str(normal[2])+" "+ str(d)+" "+ str(pt0[0])+" "+ str(pt0[1])+ " "+str(pt0[2])+" "+ str(icdx)+" "+ str(icdy)+" "+ str(icdz));
+      print('a0 = {0}, b0 = {1}'.format(a0,b0));
 
-    a0 += (icdy-a0)/Nmax; b0 = a0;
-    print('a0 = {0}, b0 = {1}'.format(a0,b0));
+    if generate_dataset:
+      bits = set_bits_for_nucleus(nucleus, totIdx)
+      data = np.loadtxt(dirname+'EPOT_2.dat')
+      mybits=""
+      for k in bits:
+        mybits+=str(k)
+      dataset[mybits] = data[step]
+      save_obj(dataset, 'dataset')
+      print("size of dataset is {0}".format( len(dataset)) )
+
+    a0 += (max_radius-a0)/Nmax; b0 = a0;
     nucleus = select_atoms_within_ecllipse(pt1, a0, b0, normal, cfg, atomIdx, totIdx)   
 
-  save_obj(dataset, 'dataset')
 #    # Find an atom i randomly in current nucleus
 #    bdy_list = find_bdy_atoms(nbrlist,nucleus,cfg)
 #    atom_i = random.sample(set(bdy_list),1)
@@ -280,6 +329,34 @@ elif status == 1:
 
 elif status == 2:
   # Read all energy states and connectivities and form graph
+  data=np.genfromtxt(dirname+"0K_0.0_relaxed_surf001.cn",skip_header=1,skip_footer=2);
+  cfg  = data[:-3,:]
+  H    = data[-3::,:]
+  atomIdx = np.arange(cfg.shape[0])
+
+  # Create a slice beneath free surface and dump to slice.cn(cfg)
+  eps = 0.02
+  v = pt2- pt1
+  v = v/LA.norm(v)
+  assert(np.abs(np.sqrt(v[0]*v[0]+v[1]*v[1] + v[2]*v[2])- LA.norm(v))<1e-10)
+  normal = np.cross(v, [0,1,0])
+
+  #opt>0, select atoms above the plane, vice versa
+  totIdx_1 = select_totalatoms_on_slice(eps, pt1, cfg, normal, atomIdx, 1)
+  totIdx_2 = select_totalatoms_on_slice(eps, pt3, cfg, normal, atomIdx, -1)
+
+  totIdx = np.union1d(totIdx_1, totIdx_2)
+  print(totIdx.shape)
+
+  writecfg_fromdata(cfg[totIdx,:], H, "slice")
+  write_rawdata(cfg[totIdx,:], "slice")
+
+  newcfg = removeNucleusAtoms(cfg, totIdx, atomIdx)
+  writecfg_fromdata(newcfg, H, "newcfg")
+  write_rawdata(newcfg, "newcfg")
+
+  call([ "sw_mc2_mpich","scripts/work/frankMEP/disl_nuc_hetero.tcl","4"]);
+
   exit(0)
 
 

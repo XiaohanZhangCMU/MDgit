@@ -1,23 +1,40 @@
-figure(1);
 
-load '../../../runs/frankMEP/EPOT_2.dat'
-load '../../../runs/frankMEP/EPOT_1.dat'
+%close all;
+clear;
+clc;
 
-plot(EPOT_2(:,1))
+dirname = '../../../runs/frankMEP/Mar28_0_05/';
+epot2_file = strcat(dirname,'/EPOT_2.dat');
+epot1_file = strcat(dirname,'/EPOT_1.dat');
+EPOT_2=load(epot2_file);
+EPOT_1=load(epot1_file);
 
-figure(2);
 
-d_void_epot = 4.044
-tmp = load(strcat('../../../runs/frankMEP/nucleus-', num2str(0),'.dat'));
+
+d_void_epot = 4.63 ; % 2.64; % 4.63; %9.04101350863513;4.63
+tmp = load(strcat(dirname,'/nucleus-', num2str(0),'.dat'));
 numvoids_0 = size(tmp,1);  
 
-for i = 1 : length(EPOT_2)-2
-  tmp = load(strcat('../../../runs/frankMEP/nucleus-', num2str(i-1),'.dat'));
+%these are the indices for strained_.cn that have perfect frank-partial dislocations
+%Mar28_0_05
+valid_disl_index_0 = [ 0 1 2 3 4 5 6 7 8 11 16 18 ]+1;
+%Mar28_0_04
+%valid_disl_index_0 = [ 0 1 2 3 4 5 6 7 8 11 14 18 ]+1;
+%valid_disl_index_0 = [1:length(EPOT_2)];
+
+EPOT_2_0 = EPOT_2(valid_disl_index_0);
+
+for i = 1 : length(EPOT_2_0)
+  id = valid_disl_index_0(i);
+  tmp = load(strcat(dirname,'/nucleus-', num2str(id-1),'.dat'));
   numvoids = size(tmp,1);  
-  NumVoids(i) = numvoids;
-%  display(numvoids);
-  EPOT_2_offset(i) = EPOT_2(i)-(numvoids-numvoids_0)*d_void_epot;
+  NumVoids_0(i) = numvoids;
+  EPOT_2_offset_0(i) = EPOT_2_0(i)-(numvoids)*d_void_epot;
+  display(EPOT_2_0(i));
+  display(numvoids);
 end
 
-dlmwrite('../../../runs/frankMEP/numvoids.txt', NumVoids')
-plot(EPOT_2_offset);
+figure(2);
+hold on;
+plot(NumVoids_0, EPOT_2_offset_0(1,:)'-EPOT_2_offset_0(1,1),'*-');
+%plot(NumVoids_0, EPOT_2_offset_0(1,:)','*-');

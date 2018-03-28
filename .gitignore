@@ -16,3 +16,4 @@ fem_modload.sh
 *.a
 *.mod
 *.pbs
+*.mat
