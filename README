@@ -1,8 +1,9 @@
-MD++ simulation code package
+MD++ simulation code package with Python and GPU supports
 
 09/03/2006
 
 Wei Cai, Department of Mechanical Engineering, Stanford Unveristy
+Xiaohan Zhang, Department of Mechanical Engineering, Stanford Unveristy
 
 For more information, see subdirectory MD++/Doc, e.g.
 
@@ -22,10 +23,10 @@ To run examples, type:
 
 For more examples and tutorials, go to:
 
- MD++ web site
+MD++ web site
 	http://micro.stanford.edu/~caiwei/Forum/2004-12-12-MD++/
 
- Companion web site for book "Computer Simulations of Dislocations",
+Companion web site for book "Computer Simulations of Dislocations",
   Vasily V. Bulatov and Wei Cai, Oxford Univeristy Press (2006)
 	http://micro.stanford.edu/~caiwei/CSD-Book/
 
